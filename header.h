@@ -66,14 +66,14 @@ typedef struct configs{
 }t_config;
 
 typedef struct queueA{
-
+    int slot_shm;
 
     struct queueA *prox;
 }t_queueA;
 
 
 typedef struct queueD{
-
+    int slot_shm;
 
     struct queueD *prox;
 }t_queueD;
@@ -109,6 +109,8 @@ typedef struct comms{
 
     int isCompleted;
 }t_comms;
+
+
 
 
 t_comms *arrayshm;

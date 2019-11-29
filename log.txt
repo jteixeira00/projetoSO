@@ -1,8 +1,5 @@
-15:48:52 Execution start
-15:48:52 Shared memory with ID 3571739 created
-15:48:52 Message Queue with ID 3571739 created
-15:48:59 WRONG COMMAND => DEPARTURE TP40 init: 10 takeoff: 100
-12:52:13 Message Queue terminated successfully
-12:52:13 Shared Memory terminated successfully
-12:52:13 Named Pipe closed successfully
-12:52:13 PROGRAM SHUT DOWN WITH CTRL+C
+16:28:28 Execution start
+16:28:28 Shared memory with ID 2850827 created
+16:28:28 Message Queue with ID 2850827 created
+16:28:31 NEW COMMAND => ARRIVAL TP10 init: 10 eta: 40 fuel: 100
+16:28:33 WOHOO, ARRIVAL FLIGHT TP10 CREATED AT MOMENT 10

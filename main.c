@@ -1,5 +1,4 @@
 #include "header.h"
-
 t_vooA *cabeca_vooA;
 t_vooD *cabeca_vooD;
 
@@ -26,6 +25,18 @@ t_vooD *cria_cabecalhovooD(void){
     }
     return lista;
 }
+
+t_queueD* cria_cabecalhoqueueD(void){
+	t_queueD *lista = (t_queueD*)malloc(sizeof(t_queueD));
+	if(lista!=NULL){
+		lista->slot_shm = NULL;
+		lista->prox = NULL;
+	}
+
+
+
+}
+
 
 
 void criarLog(){
@@ -211,17 +222,13 @@ int verificaA(char* string){
 
 void* lerMQ(void* arg){
 	int i = 0;
-	printf("cheguei aqui\n");
-	printf("cheguei aqui\n");
-	printf("cheguei aqui\n");
-	fflush(stdout);
+	printf("aquiauewqdqw\n");
+	
 	while(1){
 
     	t_message msg;
-        	printf("cheguei aqui\n");
-
-
-    	if(msgrcv(mqid, &msg, sizeof(t_message), 99999, 0)==-1){
+    	printf("tou aqui\n");
+        if(msgrcv(mqid, &msg, sizeof(t_message), 99999, 0)==-1){
     		perror("Error na ,sgrcv memory\n");
     		exit(1);
     	}
@@ -241,7 +248,8 @@ void torreControlo(){
     	perror("Erro a criar a thread lerMQ\n");
     	exit(1);
     }
-    printf("qualquer coisa\n");
+    while(1);
+    
 }
 
 void lerPipe(){
@@ -390,16 +398,12 @@ void *chegada(void *node){
     char str[100];
     char temp[10];
     sscanf(((t_vooA*)node)->nome, "TP%s", temp);
-
     int id = atoi(temp);
-
     sprintf(str, "WOHOO, ARRIVAL FLIGHT %s CREATED AT MOMENT %d", ((t_vooA*)node)->nome, current_time);
     sem_wait(escreve_log);
     printf("%s\n", str);
     escreverLog(str);
     sem_post(escreve_log);
-
-
     t_message msg;
     msg.mtype = 99999;
     msg.eta = ((t_vooA*)node)->eta;
