@@ -496,9 +496,7 @@ int main()
     printf("batata\n");
 
 
-    print("ananas\n");
-
-    printf("abacaxi\n");
+   	printf("baba de camelo\n");
 
     configs= (t_config*)malloc(sizeof(t_config));    
     lerConfig();
