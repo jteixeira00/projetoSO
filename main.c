@@ -494,11 +494,7 @@ void acabarTC(){
 int main()
 {
     printf("batata\n");
-
-
-    print("ananas\n");
-
-    printf("abacaxi\n");
+    printf("mousse de chocolate\n");
 
     configs= (t_config*)malloc(sizeof(t_config));    
     lerConfig();
