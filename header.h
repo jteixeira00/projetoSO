@@ -67,14 +67,12 @@ typedef struct configs{
 
 typedef struct queueA{
     int slot_shm;
-
     struct queueA *prox;
 }t_queueA;
 
 
 typedef struct queueD{
     int slot_shm;
-
     struct queueD *prox;
 }t_queueD;
 
@@ -94,10 +92,10 @@ typedef struct stats{
 typedef struct message{
     long mtype;
     int id; 
-    int init;
     int eta;
     int fuel;
     int takeoff;
+    int tipo; //departure 1, arrival 2
     int slot_shm;
 }t_message;
 
@@ -106,10 +104,14 @@ typedef struct comms{
     int eta;
     int fuel;
     int takeoff;
+    int tipo; //departure 1, arrival 2
+    int isCompleted; //0 incomplete, 1 complete
+}t_comms; //shared memory para instruções
 
-    int isCompleted;
-}t_comms;
-
+typedef struct cabeca_queues{
+    t_queueD D;
+    t_queueA A;
+}t_cabecasqueue;
 
 
 

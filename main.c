@@ -29,12 +29,21 @@ t_vooD *cria_cabecalhovooD(void){
 t_queueD* cria_cabecalhoqueueD(void){
 	t_queueD *lista = (t_queueD*)malloc(sizeof(t_queueD));
 	if(lista!=NULL){
-		lista->slot_shm = NULL;
+		lista->slot_shm = -1;
 		lista->prox = NULL;
 	}
 
 
+    return lista;
+}
 
+t_queueA* cria_cabecalhoqueueA(void){
+    t_queueA *lista = (t_queueA*)malloc(sizeof(t_queueA));
+    if(lista!=NULL){
+        lista->slot_shm = -1;
+        lista->prox = NULL;
+    }
+    return lista;
 }
 
 
@@ -220,22 +229,38 @@ int verificaA(char* string){
     }
 }
 
-void* lerMQ(void* arg){
+void* lerMQ(void* cabeca){
 	int i = 0;
-	printf("aquiauewqdqw\n");
 	
+	t_cabecasqueue *cabecalho = (t_cabecasqueue*)cabeca;
+    
 	while(1){
 
     	t_message msg;
-    	printf("tou aqui\n");
+    
         if(msgrcv(mqid, &msg, sizeof(t_message), 99999, 0)==-1){
     		perror("Error na ,sgrcv memory\n");
-    		exit(1);
+    		exit(0);
     	}
 
     	printf("Torre de Controlo recebeu a mensagem do voo com o ID %d\n", msg.id);
+        if(msg.tipo == 1){
+            arrayshm[i].tipo = msg.tipo;
+            arrayshm[i].takeoff = msg.takeoff;
+            arrayshm[i].isCompleted = 0; 
+
+            
+        }
+        if(msg.tipo == 2){
+            arrayshm[i].eta = msg.eta;
+            arrayshm[i].fuel = msg.fuel;
+            arrayshm[i].tipo = msg.tipo;
+            arrayshm[i].isCompleted=0;
+
+        }
     	msg.mtype = msg.id;
     	msg.slot_shm=i++;
+
     	msgsnd(mqid, &msg, sizeof(t_message), 0);
     }
 
@@ -243,8 +268,15 @@ void* lerMQ(void* arg){
 
 void torreControlo(){
     printf("Control Tower created\n");
-    
-    if(pthread_create(&tc_msq, NULL, lerMQ, NULL) != 0){
+    t_queueA cabeca_queueA;
+    cabeca_queueA.prox = NULL;
+    t_queueD cabeca_queueD;
+    cabeca_queueD.prox = NULL;
+    t_cabecasqueue *heads = malloc(sizeof(t_cabecasqueue));
+    heads->A = cabeca_queueA;
+    heads->D = cabeca_queueD;
+
+    if(pthread_create(&tc_msq, NULL, lerMQ, (void*)heads) != 0){
     	perror("Erro a criar a thread lerMQ\n");
     	exit(1);
     }
@@ -376,9 +408,9 @@ void *partida(void *node){
     t_message msg;
     msg.mtype = 99999;
     msg.id = id;
-    msg.init = ((t_vooD*)node)->init;
+    
     msg.takeoff = ((t_vooD*)node)->takeoff;
-
+    msg.tipo = 1;
     if(msgsnd(mqid, &msg, sizeof(t_message), 0)==-1){
     	perror("departure:msgsnd");
     	exit(1);
@@ -391,6 +423,7 @@ void *partida(void *node){
     shm_slot = msg.slot_shm;
 
     printf("SHARED MEMORY SLOT ATTRIBUTED IS: %d\n", msg.slot_shm);
+    printf("JA TA NA SHARED MEMORY!! yupi! vou bazar às %d\n", arrayshm[msg.slot_shm].takeoff);
     pthread_exit(0);
 }
 
@@ -409,7 +442,7 @@ void *chegada(void *node){
     msg.eta = ((t_vooA*)node)->eta;
     msg.fuel = ((t_vooA*)node)->fuel;
     msg.id = id;
-
+    msg.tipo = 2;
     msgsnd(mqid, &msg, sizeof(t_message), 0);
 
     msgrcv(mqid, &msg, sizeof(t_message), id, 0);
@@ -493,14 +526,7 @@ void acabarTC(){
 
 int main()
 {
-    printf("batata\n");
-<<<<<<< HEAD
-    printf("mousse de chocolate\n");
-=======
-
-
-   	printf("baba de camelo\n");
->>>>>>> 91be01e4939657254575304549844daba8a010d1
+ 
 
     configs= (t_config*)malloc(sizeof(t_config));    
     lerConfig();
@@ -531,7 +557,7 @@ int main()
     }
     signal(SIGINT, acabar);
 
-    //criar struct com a cabeça das listas para mandar para a criavoos
+    //criar struct com a cabeca das listas para mandar para a criavoos
     if(pthread_create(&thread_check, NULL, criavoos, NULL)!=0){
         perror("pthread_create error");
         exit(1);

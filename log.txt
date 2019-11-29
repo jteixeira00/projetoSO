@@ -1,5 +1,5 @@
-16:28:28 Execution start
-16:28:28 Shared memory with ID 2850827 created
-16:28:28 Message Queue with ID 2850827 created
-16:28:31 NEW COMMAND => ARRIVAL TP10 init: 10 eta: 40 fuel: 100
-16:28:33 WOHOO, ARRIVAL FLIGHT TP10 CREATED AT MOMENT 10
+18:57:29 Execution start
+18:57:29 Shared memory with ID 2719755 created
+18:57:29 Message Queue with ID 2719755 created
+18:57:35 NEW COMMAND => DEPARTURE TP123 init: 50 takeoff: 300
+18:57:53 WOHOO, DEPARTURE FLIGHT TP123 CREATED AT MOMENT 50
