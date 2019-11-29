@@ -493,7 +493,7 @@ void acabarTC(){
 
 int main()
 {
-    
+    printf("batata\n");
     configs= (t_config*)malloc(sizeof(t_config));    
     lerConfig();
     ut = configs->ut;
