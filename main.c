@@ -478,6 +478,7 @@ void acabar(){
 }
 
 
+
 void acabarTC(){
 	
     sem_wait(escreve_log);
