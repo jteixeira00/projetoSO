@@ -109,8 +109,8 @@ typedef struct comms{
 }t_comms; //shared memory para instruções
 
 typedef struct cabeca_queues{
-    t_queueD D;
-    t_queueA A;
+    t_queueD *D;
+    t_queueA *A;
 }t_cabecasqueue;
 
 
@@ -129,6 +129,7 @@ pthread_t thread_tempo;
 
 pthread_t thread_check;
 pthread_t tc_msq;
+pthread_t tc_managefuel;
 
 pthread_t voosChegada[1000], voosPartida[1000];
 

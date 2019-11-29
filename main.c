@@ -239,31 +239,62 @@ void* lerMQ(void* cabeca){
     	t_message msg;
     
         if(msgrcv(mqid, &msg, sizeof(t_message), 99999, 0)==-1){
-    		perror("Error na ,sgrcv memory\n");
-    		exit(0);
+    		perror("Error na msgrcv memory\n");
+            return 0;
+    		
     	}
-
     	printf("Torre de Controlo recebeu a mensagem do voo com o ID %d\n", msg.id);
         if(msg.tipo == 1){
             arrayshm[i].tipo = msg.tipo;
             arrayshm[i].takeoff = msg.takeoff;
             arrayshm[i].isCompleted = 0; 
-
-            
+            arrayshm[i].id = msg.id;
+            t_queueD *node = cabecalho->D;
+            t_queueD *nodeNovo = malloc(sizeof(t_queueD));
+            while((node->prox!=NULL)&&(arrayshm[node->prox->slot_shm].takeoff<msg.takeoff)){
+                node = node->prox;
+            }
+            nodeNovo->slot_shm = i;
+            nodeNovo->prox = node->prox;
+            node->prox = nodeNovo;
         }
         if(msg.tipo == 2){
+            arrayshm[i].id = msg.id;
             arrayshm[i].eta = msg.eta;
             arrayshm[i].fuel = msg.fuel;
             arrayshm[i].tipo = msg.tipo;
             arrayshm[i].isCompleted=0;
-
+            t_queueA *nodeA = cabecalho->A;
+            t_queueA *nodeNovo = (t_queueA*)malloc(sizeof(t_queueA));
+            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)){
+                nodeA = nodeA->prox;
+            }
+            nodeNovo->slot_shm = i;
+            nodeNovo->prox = nodeA->prox;
+            nodeA->prox = nodeNovo;
         }
     	msg.mtype = msg.id;
     	msg.slot_shm=i++;
-
     	msgsnd(mqid, &msg, sizeof(t_message), 0);
-    }
+        
+    }  
+}
 
+void *ManageFuel(void *cabeca){
+    
+    t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
+
+    while(1){
+
+        t_queueA *nodeA = cabecaA;
+        nodeA = nodeA->prox;
+        while(nodeA!=NULL){
+            arrayshm[nodeA->slot_shm].fuel -=1;
+            nodeA = nodeA->prox;
+        }
+        
+        usleep(ut);
+    }
 }
 
 void torreControlo(){
@@ -273,12 +304,15 @@ void torreControlo(){
     t_queueD cabeca_queueD;
     cabeca_queueD.prox = NULL;
     t_cabecasqueue *heads = malloc(sizeof(t_cabecasqueue));
-    heads->A = cabeca_queueA;
-    heads->D = cabeca_queueD;
-
+    heads->A = &cabeca_queueA;
+    heads->D = &cabeca_queueD;
     if(pthread_create(&tc_msq, NULL, lerMQ, (void*)heads) != 0){
     	perror("Erro a criar a thread lerMQ\n");
     	exit(1);
+    }
+    if(pthread_create(&tc_managefuel, NULL, ManageFuel, (void*)heads) != 0){
+        perror("Erro a criar a thread tc_managefuel\n");
+        exit(1);
     }
     while(1);
     
