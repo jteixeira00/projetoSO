@@ -1,11 +1,8 @@
-19:44:43 Execution start
-19:44:43 Shared memory with ID 3506192 created
-19:44:43 Message Queue with ID 3506192 created
-19:44:45 NEW COMMAND => DEPARTURE TP7 init: 90 takeoff: 100
-19:44:46 NEW COMMAND => DEPARTURE TP3 init: 15 takeoff: 30
-19:44:48 NEW COMMAND => DEPARTURE TP1 init: 15 takeoff: 20
-19:44:50 WOHOO, DEPARTURE FLIGHT TP1 CREATED AT MOMENT 1519:44:50 WOHOO, DEPARTURE FLIGHT TP3 CREATED AT MOMENT 1519:45:28 WOHOO, DEPARTURE FLIGHT TP7 CREATED AT MOMENT 9019:46:41 Control Tower shut down successfully
-19:46:41 Message Queue terminated successfully
-19:46:41 Shared Memory terminated successfully
-19:46:41 Named Pipe closed successfully
-19:46:41 PROGRAM SHUT DOWN WITH CTRL+C
+18:00:24 Execution start
+18:00:24 Shared memory with ID 3375113 created
+18:00:24 Message Queue with ID 3375113 created
+18:00:27 NEW COMMAND => ARRIVAL TP03 init: 10 eta: 10 fuel: 20
+18:00:29 WOHOO, ARRIVAL FLIGHT TP03 CREATED AT MOMENT 1018:00:40 Message Queue terminated successfully
+18:00:40 Shared Memory terminated successfully
+18:00:40 Named Pipe closed successfully
+18:00:40 PROGRAM SHUT DOWN WITH CTRL+C

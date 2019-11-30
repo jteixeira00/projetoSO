@@ -281,19 +281,22 @@ void* lerMQ(void* cabeca){
 }
 
 void *ManageFuel(void *cabeca){
-    
     t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
-
     while(1){
-
         t_queueA *nodeA = cabecaA;
-        nodeA = nodeA->prox;
-        while(nodeA!=NULL){
-            arrayshm[nodeA->slot_shm].fuel -=1;
+        while(nodeA->prox!=NULL){
+            arrayshm[nodeA->prox->slot_shm].fuel -=1;
+            if(arrayshm[nodeA->prox->slot_shm].fuel == 0){
+        		nodeA->prox = nodeA->prox->prox;
+        	}
+        	printf("%d\n",current_time);
+        	/*if(current_time == arrayshm[nodeA->prox->slot_shm].eta){
+        		printf("It's Britney BITCH!");
+        			
+        	}*/
             nodeA = nodeA->prox;
         }
-        
-        usleep(ut);
+        usleep(ut*1000);
     }
 }
 
@@ -314,8 +317,7 @@ void torreControlo(){
         perror("Erro a criar a thread tc_managefuel\n");
         exit(1);
     }
-    while(1);
-    
+    while(1);  
 }
 
 void lerPipe(){
@@ -444,7 +446,7 @@ void *partida(void *node){
     msg.id = id;
     
     msg.takeoff = ((t_vooD*)node)->takeoff;
-    msg.tipo = 1;
+    msg.tipo = 1; 	
     if(msgsnd(mqid, &msg, sizeof(t_message), 0)==-1){
     	perror("departure:msgsnd");
     	exit(1);
@@ -458,6 +460,7 @@ void *partida(void *node){
 
     printf("SHARED MEMORY SLOT ATTRIBUTED IS: %d\n", msg.slot_shm);
     printf("JA TA NA SHARED MEMORY!! yupi! vou bazar às %d\n", arrayshm[msg.slot_shm].takeoff);
+
     pthread_exit(0);
 }
 
@@ -507,7 +510,7 @@ void *criavoos(){
             nodeD = nodeD->prox; 
 
         }
-        usleep(configs->ut);
+        usleep(ut*1000);
     }
 
 }
@@ -570,6 +573,7 @@ int main()
         perror("pthread_create error");
         exit(1);
     }
+
     sem_unlink(SEM_LOG);
     escreve_log = sem_open(SEM_LOG, O_CREAT | O_EXCL, 0700, 1);
 
@@ -585,6 +589,11 @@ int main()
     criarPipe();
     
     if(fork()==0){
+    	if(pthread_create(&thread_tempoTC, NULL, tempo, NULL)!=0){
+        	perror("pthread_create error");
+       		exit(1);
+    	}
+    	
         signal(SIGINT, acabarTC);
         torreControlo();
         exit(0);

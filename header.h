@@ -42,8 +42,6 @@ typedef struct vooA{
 
 }t_vooA;
 
-
-
 typedef struct vooD{
     char *nome;
     int init;
@@ -51,7 +49,6 @@ typedef struct vooD{
     struct vooD *prox;
 
 }t_vooD;
-
 
 typedef struct configs{
     int ut;
@@ -70,7 +67,6 @@ typedef struct queueA{
     struct queueA *prox;
 }t_queueA;
 
-
 typedef struct queueD{
     int slot_shm;
     struct queueD *prox;
@@ -87,7 +83,6 @@ typedef struct stats{
     int nRedirecionados;
     int rejeitados;
 }t_stats;
-
 
 typedef struct message{
     long mtype;
@@ -116,23 +111,18 @@ typedef struct cabeca_queues{
 
 
 t_comms *arrayshm;
-
-
 t_config *configs;
 t_stats *stats;
-
 sem_t *escreve_log;
 
-
 pthread_mutex_t readpipe = PTHREAD_MUTEX_INITIALIZER;
-pthread_t thread_tempo;
 
+pthread_t thread_tempo;
+pthread_t thread_tempoTC;
 pthread_t thread_check;
 pthread_t tc_msq;
 pthread_t tc_managefuel;
-
 pthread_t voosChegada[1000], voosPartida[1000];
-
 
 int ut;
 int current_time = 0;
