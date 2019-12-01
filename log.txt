@@ -1,8 +1,8 @@
-15:18:27 Execution start
-15:18:27 Shared memory with ID 4882441 created
-15:18:27 Message Queue with ID 4882441 created
-15:18:27 Execution start
-15:18:27 Shared memory with ID 4882441 created
-15:18:27 Message Queue with ID 4882441 created
-15:18:27 Control Tower created
-15:18:28 Control Tower shut down successfully
+16:45:21 Execution start at [21653]
+16:45:21 Shared memory with ID 5111817 created
+16:45:21 Message Queue with ID 2392064 created
+16:45:21 Control Tower created
+16:45:52 Message Queue terminated successfully
+16:45:52 Shared Memory terminated successfully
+16:45:52 Named Pipe closed successfully
+16:45:52 PROGRAM SHUT DOWN WITH CTRL+C

@@ -109,7 +109,11 @@ void escreverEcra(char message[]){
 
 void escreverLog(char message[]){
     
-    
+    fp=fopen("log.txt", "a+");
+    if(fp==NULL){
+        printf("Error opening log file\n");
+        exit(1);
+    }
     struct tm *timeInfo;
     time_t raw = time(NULL);
     char buffer[50];
@@ -117,6 +121,7 @@ void escreverLog(char message[]){
     strftime(buffer, 50, "%H:%M:%S",timeInfo);
     fprintf(fp, "%s %s", buffer, message);
     memset(buffer, 0, sizeof(buffer));
+    fclose(fp);
     
 }
 
@@ -182,7 +187,7 @@ void criarMQ(){
 		exit(1);
 
 	}
-    sprintf(message, "Message Queue with ID %d created\n", shmid );
+    sprintf(message, "Message Queue with ID %d created\n", mqid );
     sem_wait(escreve_log);
     escreverEcra(message);
     escreverLog(message);
@@ -575,26 +580,27 @@ void *criavoos(){
 
 
 void acabar(){
-	fclose(fp);
+	
     msgctl(mqid,IPC_RMID,NULL);
+    kill(getpid(), SIGUSR1);
     sem_wait(escreve_log);
-    escreverEcra("Message Queue terminated successfully\n\n");
+    escreverEcra("Message Queue terminated successfully\n");
     escreverLog("Message Queue terminated successfully\n");
     sem_post(escreve_log);
     //depois colocar aqui o que dermos attach à shared memory
     shmctl(shmid, IPC_RMID, NULL);
     sem_wait(escreve_log);
-    escreverEcra("Shared Memory terminated successfully\n\n");
+    escreverEcra("Shared Memory terminated successfully\n");
     escreverLog("Shared Memory terminated successfully\n");
     sem_post(escreve_log);
     close(fdpipe);
     unlink(PIPE);
     sem_wait(escreve_log);
-    escreverEcra("Named Pipe closed successfully\n\n");
+    escreverEcra("Named Pipe closed successfully\n");
     escreverLog("Named Pipe closed successfully\n");
     sem_post(escreve_log);
     sem_wait(escreve_log);
-    escreverEcra("PROGRAM SHUT DOWN WITH CTRL+C\n\n");
+    escreverEcra("PROGRAM SHUT DOWN WITH CTRL+C\n");
     escreverLog("PROGRAM SHUT DOWN WITH CTRL+C\n");
     sem_post(escreve_log);
     kill(0, SIGKILL);
@@ -614,15 +620,21 @@ void acabarTC(){
 }
 
 void inicializa_stats(){
-	stats->nvoos =0;
+	stats->nVoos =0;
 	stats->nAterragens = 0;
-	stats->tempomedioAterrar=0:
+	stats->tempomedioAterrar=0;
 	stats->nDescolagens = 0;
 	stats->tempomedioDescolar = 0;
-	stats->nmedioGoldings = 0;
+	stats->nmedioHoldings = 0;
 	stats->nmedioHoldings_urgentes = 0;
 	stats->nRedirecionados =0;
 	stats->rejeitados =0;
+}
+
+void sigusr_handler(int signum){
+	sem_wait(sem_stats);
+	printf("BOTA AI AS ESTATISTICAS ZECA\n");
+	sem_post(sem_stats);
 }
 
 int main()
@@ -632,11 +644,8 @@ int main()
     configs= (t_config*)malloc(sizeof(t_config));    
     lerConfig();
     ut = configs->ut;
-    fp=fopen("log.txt", "a+");
-    if(fp==NULL){
-        printf("Error opening log file\n");
-        exit(1);
-    }
+    
+    char str[100];
     ftime(&t_inicio);
     if(pthread_create(&thread_tempo, NULL, tempo, NULL)!=0){
         perror("pthread_create error");
@@ -654,14 +663,16 @@ int main()
     cabeca_vooD = cria_cabecalhovooD();
     //cria log.txt e escreve
     criarLog();
+    sprintf(str, "Execution start at [%d]\n", getpid());
     sem_wait(escreve_log);
-    escreverEcra("Execution start\n");
-    escreverLog("Execution start\n");
+    escreverEcra(str);
+    escreverLog(str);
     sem_post(escreve_log);
     criarSHM();
     
     criarMQ();
     criarPipe();
+    signal(SIGUSR1, sigusr_handler);
     
     if(fork()==0){
     	if(pthread_create(&thread_tempoTC, NULL, tempo, NULL)!=0){
