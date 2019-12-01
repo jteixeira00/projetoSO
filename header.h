@@ -27,6 +27,8 @@
 struct timeb t_inicio;
 
 #define SEM_LOG "SEM_LOG"
+#define SEM_ARR "SEM_ARRAY"
+#define SEM_STATS "SEM_STATS"
 
 #define MAX_C 150
 #define PIPE "pipe"
@@ -100,6 +102,8 @@ typedef struct comms{
     int fuel;
     int takeoff;
     int tipo; //departure 1, arrival 2
+    int command; //0 descolar, 1 aterrar, 2 hold, 3 desvio
+    int hold_time;
     int isCompleted; //0 incomplete, 1 complete
 }t_comms; //shared memory para instruções
 
@@ -114,6 +118,8 @@ t_comms *arrayshm;
 t_config *configs;
 t_stats *stats;
 sem_t *escreve_log;
+sem_t *sem_array;
+sem_t *sem_stats;
 
 pthread_mutex_t readpipe = PTHREAD_MUTEX_INITIALIZER;
 
@@ -124,6 +130,7 @@ pthread_t tc_msq;
 pthread_t tc_managefuel;
 pthread_t voosChegada[1000], voosPartida[1000];
 
+FILE *fp;
 int ut;
 int current_time = 0;
 int shmid;

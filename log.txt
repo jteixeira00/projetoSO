@@ -1,8 +1,8 @@
-18:00:24 Execution start
-18:00:24 Shared memory with ID 3375113 created
-18:00:24 Message Queue with ID 3375113 created
-18:00:27 NEW COMMAND => ARRIVAL TP03 init: 10 eta: 10 fuel: 20
-18:00:29 WOHOO, ARRIVAL FLIGHT TP03 CREATED AT MOMENT 1018:00:40 Message Queue terminated successfully
-18:00:40 Shared Memory terminated successfully
-18:00:40 Named Pipe closed successfully
-18:00:40 PROGRAM SHUT DOWN WITH CTRL+C
+15:18:27 Execution start
+15:18:27 Shared memory with ID 4882441 created
+15:18:27 Message Queue with ID 4882441 created
+15:18:27 Execution start
+15:18:27 Shared memory with ID 4882441 created
+15:18:27 Message Queue with ID 4882441 created
+15:18:27 Control Tower created
+15:18:28 Control Tower shut down successfully

@@ -1,3 +1,6 @@
+//Dinis Silva Costa Carvalho, nº 2018278118
+//João Pimentel Roque Rodrigues Teixeira, nº 2018278532
+
 #include "header.h"
 t_vooA *cabeca_vooA;
 t_vooD *cabeca_vooD;
@@ -93,21 +96,28 @@ void insereOrdenadoA(char *nome, int init, int eta, int fuel, t_vooA *cabeca_voo
 }
 
 
+void escreverEcra(char message[]){
+	struct tm *timeInfo;
+    time_t raw = time(NULL);
+    char buffer[50];
+    timeInfo=gmtime(&raw);
+    strftime(buffer, 50, "%H:%M:%S",timeInfo);
+    printf("%s %s", buffer, message);
+    memset(buffer, 0, sizeof(buffer));
+
+}
+
 void escreverLog(char message[]){
-    FILE *fp;
-    fp=fopen("log.txt", "a+");
+    
+    
     struct tm *timeInfo;
     time_t raw = time(NULL);
     char buffer[50];
     timeInfo=gmtime(&raw);
     strftime(buffer, 50, "%H:%M:%S",timeInfo);
-    if(fp==NULL){
-        printf("Error opening log file\n");
-        exit(1);
-    }
     fprintf(fp, "%s %s", buffer, message);
     memset(buffer, 0, sizeof(buffer));
-    fclose(fp);
+    
 }
 
 
@@ -148,17 +158,18 @@ void criarSHM(){
 
     char message[100];
     int maxvoos = configs->maxchega + configs->maxpart;
-	shmid = shmget(IPC_PRIVATE, sizeof(t_comms)*maxvoos, IPC_CREAT|0666);
+	shmid = shmget(IPC_PRIVATE, sizeof(t_comms)*maxvoos + sizeof(t_stats), IPC_CREAT|0666);
 	sprintf(message, "Shared memory with ID %d created\n", shmid );
     sem_wait(escreve_log);
 
-    printf("Shared memory with ID %d created\n", shmid); 
+    escreverEcra(message);
     escreverLog(message);
     sem_post(escreve_log);
     
     arrayshm = (t_comms*)malloc(maxvoos * sizeof(t_comms));
     arrayshm = (t_comms*)shmat(shmid, NULL, 0);
-   
+    stats = (t_stats*)malloc(sizeof(t_stats));
+    stats = (t_stats*)shmat(shmid, NULL, 0);   
     	
 	//acrescentar error handling	
     }
@@ -173,7 +184,7 @@ void criarMQ(){
 	}
     sprintf(message, "Message Queue with ID %d created\n", shmid );
     sem_wait(escreve_log);
-    printf("Message Queue with ID %d created\n", mqid); 
+    escreverEcra(message);
     escreverLog(message);
     sem_post(escreve_log);
 }
@@ -231,34 +242,45 @@ int verificaA(char* string){
 
 void* lerMQ(void* cabeca){
 	int i = 0;
-	
+	char str[100];
 	t_cabecasqueue *cabecalho = (t_cabecasqueue*)cabeca;
-    
 	while(1){
 
     	t_message msg;
     
         if(msgrcv(mqid, &msg, sizeof(t_message), 99999, 0)==-1){
     		perror("Error na msgrcv memory\n");
-            return 0;
-    		
-    	}
-    	printf("Torre de Controlo recebeu a mensagem do voo com o ID %d\n", msg.id);
+            return 0;   		
+    	}  
+
+    	strcpy(str, "");
+    	sprintf(str, "FLIGHT TP%d CONTACTED CONTROL TOWER FOR THE FIRST TIME\n", msg.id);
+    	sem_wait(escreve_log);
+    	escreverEcra(str);
+    	escreverLog(str);
+    	sem_post(escreve_log);
+    	sem_wait(sem_stats);
+    	stats->nVoos +=1;
+    	sem_post(sem_stats);
         if(msg.tipo == 1){
+        	sem_wait(sem_array);
             arrayshm[i].tipo = msg.tipo;
             arrayshm[i].takeoff = msg.takeoff;
             arrayshm[i].isCompleted = 0; 
             arrayshm[i].id = msg.id;
+
             t_queueD *node = cabecalho->D;
             t_queueD *nodeNovo = malloc(sizeof(t_queueD));
             while((node->prox!=NULL)&&(arrayshm[node->prox->slot_shm].takeoff<msg.takeoff)){
                 node = node->prox;
             }
+            sem_post(sem_array);
             nodeNovo->slot_shm = i;
             nodeNovo->prox = node->prox;
             node->prox = nodeNovo;
         }
         if(msg.tipo == 2){
+        	sem_wait(sem_array);
             arrayshm[i].id = msg.id;
             arrayshm[i].eta = msg.eta;
             arrayshm[i].fuel = msg.fuel;
@@ -269,6 +291,7 @@ void* lerMQ(void* cabeca){
             while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)){
                 nodeA = nodeA->prox;
             }
+            sem_post(sem_array);
             nodeNovo->slot_shm = i;
             nodeNovo->prox = nodeA->prox;
             nodeA->prox = nodeNovo;
@@ -282,26 +305,38 @@ void* lerMQ(void* cabeca){
 
 void *ManageFuel(void *cabeca){
     t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
+    char str[100];
     while(1){
         t_queueA *nodeA = cabecaA;
         while(nodeA->prox!=NULL){
+        	sem_wait(sem_array);
             arrayshm[nodeA->prox->slot_shm].fuel -=1;
             if(arrayshm[nodeA->prox->slot_shm].fuel == 0){
-        		nodeA->prox = nodeA->prox->prox;
+    		strcpy(str,"");
+		    sprintf(str,"FLIGHT TP%d FUEL LEVELS CRITICAL. DIVERTING FLIGHT TO NEAREST AIRPORT\n", arrayshm[nodeA->prox->slot_shm].id);
+		    sem_wait(escreve_log);
+		    escreverEcra(str);
+		    escreverLog(str);
+		    sem_post(escreve_log);
+            arrayshm[nodeA->prox->slot_shm].isCompleted = 1;
+        	nodeA->prox = nodeA->prox->prox;
+        	sem_wait(sem_stats);
+        	stats->nRedirecionados +=1;
+        	sem_post(sem_stats);
         	}
-        	printf("%d\n",current_time);
-        	/*if(current_time == arrayshm[nodeA->prox->slot_shm].eta){
-        		printf("It's Britney BITCH!");
-        			
-        	}*/
+        	sem_post(sem_array);
+        	
             nodeA = nodeA->prox;
-        }
+        }	
         usleep(ut*1000);
     }
 }
 
 void torreControlo(){
-    printf("Control Tower created\n");
+	sem_wait(escreve_log);
+    escreverEcra("Control Tower created\n");
+    escreverLog("Control Tower created\n");
+    sem_post(escreve_log);
     t_queueA cabeca_queueA;
     cabeca_queueA.prox = NULL;
     t_queueD cabeca_queueD;
@@ -360,7 +395,7 @@ void lerPipe(){
     		strcpy(str, "");
     		sprintf(str, "WRONG COMMAND => %s\n", comando);
     		sem_wait(escreve_log);
-            printf("%s", str);
+            escreverEcra(str);
             escreverLog(str);
             sem_post(escreve_log);
     		strcpy(str, "");		
@@ -369,7 +404,7 @@ void lerPipe(){
     		strcpy(str, "");
     		sprintf(str, "NEW COMMAND => %s\n", comando);
             sem_wait(escreve_log);
-    		printf("%s", str);
+    		escreverEcra(str);
     		escreverLog(str);
             sem_post(escreve_log);
             if(comando[0]=='A'){
@@ -432,10 +467,10 @@ void *partida(void *node){
     int shm_slot;
     sscanf(((t_vooD*)node)->nome, "TP%s", temp);
     int id = atoi(temp);
-    sprintf(str, "WOHOO, DEPARTURE FLIGHT %s CREATED AT MOMENT %d", ((t_vooD*)node)->nome, current_time);
+    sprintf(str, "WOHOO, DEPARTURE FLIGHT %s CREATED AT MOMENT %d\n", ((t_vooD*)node)->nome, current_time);
    
     sem_wait(escreve_log);
-    printf("%s\n", str);
+    escreverEcra(str);
     escreverLog(str);
     sem_post(escreve_log); 
  
@@ -457,21 +492,24 @@ void *partida(void *node){
     }
 
     shm_slot = msg.slot_shm;
-
-    printf("SHARED MEMORY SLOT ATTRIBUTED IS: %d\n", msg.slot_shm);
-    printf("JA TA NA SHARED MEMORY!! yupi! vou bazar às %d\n", arrayshm[msg.slot_shm].takeoff);
-
+    strcpy(str,"");
+    sprintf(str, "SHARED MEMORY SLOT ATTRIBUTED TO FLIGHT TP%d IS: %d\n", id, shm_slot);
+    sem_wait(escreve_log);
+    escreverEcra(str);
+    escreverLog(str);
+    sem_post(escreve_log);
     pthread_exit(0);
 }
 
 void *chegada(void *node){
     char str[100];
     char temp[10];
+    int shm_slot;
     sscanf(((t_vooA*)node)->nome, "TP%s", temp);
     int id = atoi(temp);
-    sprintf(str, "WOHOO, ARRIVAL FLIGHT %s CREATED AT MOMENT %d", ((t_vooA*)node)->nome, current_time);
+    sprintf(str, "WOHOO, ARRIVAL FLIGHT %s CREATED AT MOMENT %d\n", ((t_vooA*)node)->nome, current_time);
     sem_wait(escreve_log);
-    printf("%s\n", str);
+    escreverEcra(str);
     escreverLog(str);
     sem_post(escreve_log);
     t_message msg;
@@ -483,8 +521,27 @@ void *chegada(void *node){
     msgsnd(mqid, &msg, sizeof(t_message), 0);
 
     msgrcv(mqid, &msg, sizeof(t_message), id, 0);
+    shm_slot = msg.slot_shm;
 
-    printf("SHARED MEMORY SLOT ATTRIBUTED IS: %d\n", msg.slot_shm);
+    strcpy(str,"");
+    sprintf(str, "SHARED MEMORY SLOT ATTRIBUTED TO FLIGHT TP%d IS: %d\n", id, shm_slot);
+    sem_wait(escreve_log);
+    escreverEcra(str);
+    escreverLog(str);
+    sem_post(escreve_log);
+    while(1){
+    	if(arrayshm[shm_slot].isCompleted){
+    		strcpy(str,"");
+		    sprintf(str,"FLIGHT TP%d HAS BEEN CONCLUDED\n", msg.id);
+		    sem_wait(escreve_log);
+		    escreverEcra(str);
+		    escreverLog(str);
+		    sem_post(escreve_log);
+    		break;
+    	}
+    }
+
+
     
     pthread_exit(0);
 }
@@ -518,29 +575,26 @@ void *criavoos(){
 
 
 void acabar(){
+	fclose(fp);
     msgctl(mqid,IPC_RMID,NULL);
     sem_wait(escreve_log);
-    printf("\nMessage Queue terminated successfully\n\n");
+    escreverEcra("Message Queue terminated successfully\n\n");
     escreverLog("Message Queue terminated successfully\n");
     sem_post(escreve_log);
-
     //depois colocar aqui o que dermos attach à shared memory
     shmctl(shmid, IPC_RMID, NULL);
-
     sem_wait(escreve_log);
-    printf("Shared Memory terminated successfully\n\n");
+    escreverEcra("Shared Memory terminated successfully\n\n");
     escreverLog("Shared Memory terminated successfully\n");
     sem_post(escreve_log);
-
     close(fdpipe);
     unlink(PIPE);
     sem_wait(escreve_log);
-    printf("Named Pipe closed successfully\n\n");
+    escreverEcra("Named Pipe closed successfully\n\n");
     escreverLog("Named Pipe closed successfully\n");
     sem_post(escreve_log);
-
     sem_wait(escreve_log);
-    printf("PROGRAM SHUT DOWN WITH CTRL+C\n\n");
+    escreverEcra("PROGRAM SHUT DOWN WITH CTRL+C\n\n");
     escreverLog("PROGRAM SHUT DOWN WITH CTRL+C\n");
     sem_post(escreve_log);
     kill(0, SIGKILL);
@@ -552,14 +606,24 @@ void acabar(){
 void acabarTC(){
 	
     sem_wait(escreve_log);
-    printf("Control Tower shut down successfully\n");
+    escreverEcra("Control Tower shut down successfully\n");
     escreverLog("Control Tower shut down successfully\n");
     sem_post(escreve_log);
     exit(0);
 
 }
 
-
+void inicializa_stats(){
+	stats->nvoos =0;
+	stats->nAterragens = 0;
+	stats->tempomedioAterrar=0:
+	stats->nDescolagens = 0;
+	stats->tempomedioDescolar = 0;
+	stats->nmedioGoldings = 0;
+	stats->nmedioHoldings_urgentes = 0;
+	stats->nRedirecionados =0;
+	stats->rejeitados =0;
+}
 
 int main()
 {
@@ -568,6 +632,11 @@ int main()
     configs= (t_config*)malloc(sizeof(t_config));    
     lerConfig();
     ut = configs->ut;
+    fp=fopen("log.txt", "a+");
+    if(fp==NULL){
+        printf("Error opening log file\n");
+        exit(1);
+    }
     ftime(&t_inicio);
     if(pthread_create(&thread_tempo, NULL, tempo, NULL)!=0){
         perror("pthread_create error");
@@ -576,13 +645,19 @@ int main()
 
     sem_unlink(SEM_LOG);
     escreve_log = sem_open(SEM_LOG, O_CREAT | O_EXCL, 0700, 1);
+    sem_unlink(SEM_ARR);
+    sem_array = sem_open(SEM_ARR, O_CREAT | O_EXCL, 0700, 1);
+    sem_unlink(SEM_STATS);
+    sem_stats = sem_open(SEM_STATS, O_CREAT | O_EXCL, 0700, 1);
 
     cabeca_vooA = cria_cabecalhovooA();
     cabeca_vooD = cria_cabecalhovooD();
     //cria log.txt e escreve
     criarLog();
+    sem_wait(escreve_log);
+    escreverEcra("Execution start\n");
     escreverLog("Execution start\n");
-    
+    sem_post(escreve_log);
     criarSHM();
     
     criarMQ();
