@@ -1,1 +1,2 @@
-compilar com: gcc main.c -lpthread -Wall -o  main
+compilar com: make
+./main
