@@ -187,7 +187,7 @@ void criarMQ(){
 		exit(1);
 
 	}
-    sprintf(message, "Message Queue with ID %d created\n", mqid );
+    sprintf(message, "Message Queue with ID %d created\n", mqid);
     sem_wait(escreve_log);
     escreverEcra(message);
     escreverLog(message);
@@ -273,6 +273,7 @@ void* lerMQ(void* cabeca){
             arrayshm[i].takeoff = msg.takeoff;
             arrayshm[i].isCompleted = 0; 
             arrayshm[i].id = msg.id;
+            
 
             t_queueD *node = cabecalho->D;
             t_queueD *nodeNovo = malloc(sizeof(t_queueD));
@@ -286,11 +287,13 @@ void* lerMQ(void* cabeca){
         }
         if(msg.tipo == 2){
         	sem_wait(sem_array);
+        	
             arrayshm[i].id = msg.id;
             arrayshm[i].eta = msg.eta;
             arrayshm[i].fuel = msg.fuel;
             arrayshm[i].tipo = msg.tipo;
             arrayshm[i].isCompleted=0;
+            
             t_queueA *nodeA = cabecalho->A;
             t_queueA *nodeNovo = (t_queueA*)malloc(sizeof(t_queueA));
             while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)){
@@ -303,7 +306,11 @@ void* lerMQ(void* cabeca){
         }
     	msg.mtype = msg.id;
     	msg.slot_shm=i++;
+    	
     	msgsnd(mqid, &msg, sizeof(t_message), 0);
+    	printf("oi1: %d\n", arrayshm[0].id);
+    	printf("Oi2: %d\n", arrayshm[1].id);
+    	printf("oi3: %d \n", arrayshm[2].id);
         
     }  
 }
@@ -311,23 +318,31 @@ void* lerMQ(void* cabeca){
 void *ManageFuel(void *cabeca){
     t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
     char str[100];
+
+
     while(1){
-        t_queueA *nodeA = cabecaA;
+    	t_queueA *nodeA = cabecaA;
+    	while(nodeA->prox!=NULL){
+    		    		nodeA = nodeA->prox;
+    	}
+        nodeA = cabecaA;
         while(nodeA->prox!=NULL){
         	sem_wait(sem_array);
             arrayshm[nodeA->prox->slot_shm].fuel -=1;
+            
             if(arrayshm[nodeA->prox->slot_shm].fuel == 0){
-    		strcpy(str,"");
-		    sprintf(str,"FLIGHT TP%d FUEL LEVELS CRITICAL. DIVERTING FLIGHT TO NEAREST AIRPORT\n", arrayshm[nodeA->prox->slot_shm].id);
-		    sem_wait(escreve_log);
-		    escreverEcra(str);
-		    escreverLog(str);
-		    sem_post(escreve_log);
-            arrayshm[nodeA->prox->slot_shm].isCompleted = 1;
-        	nodeA->prox = nodeA->prox->prox;
-        	sem_wait(sem_stats);
-        	stats->nRedirecionados +=1;
-        	sem_post(sem_stats);
+	    		strcpy(str,"");
+			    sprintf(str,"FLIGHT TP%d FUEL LEVELS CRITICAL. DIVERTING FLIGHT TO NEAREST AIRPORT\n", arrayshm[nodeA->prox->slot_shm].id);
+			    sem_wait(escreve_log);
+			    escreverEcra(str);
+			    escreverLog(str);
+			    sem_post(escreve_log);
+	            arrayshm[nodeA->prox->slot_shm].isCompleted = 1;
+	            free(nodeA->prox);
+	        	nodeA->prox = nodeA->prox->prox;
+	        	sem_wait(sem_stats);
+	        	stats->nRedirecionados +=1;
+	        	sem_post(sem_stats);
         	}
         	sem_post(sem_array);
         	
@@ -672,7 +687,7 @@ int main()
     
     criarMQ();
     criarPipe();
-    signal(SIGUSR1, sigusr_handler);
+    
     
     if(fork()==0){
     	if(pthread_create(&thread_tempoTC, NULL, tempo, NULL)!=0){
@@ -684,6 +699,7 @@ int main()
         torreControlo();
         exit(0);
     }
+    signal(SIGUSR1, sigusr_handler);
     signal(SIGINT, acabar);
 
     //criar struct com a cabeca das listas para mandar para a criavoos
