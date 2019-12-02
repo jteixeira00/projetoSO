@@ -74,17 +74,6 @@ typedef struct queueD{
     struct queueD *prox;
 }t_queueD;
 
-typedef struct stats{
-    int nVoos;
-    int nAterragens;
-    int tempomedioAterrar;
-    int nDescolagens;
-    int tempomedioDescolar;
-    int nmedioHoldings;
-    int nmedioHoldings_urgentes;
-    int nRedirecionados;
-    int rejeitados;
-}t_stats;
 
 typedef struct message{
     long mtype;
@@ -114,6 +103,18 @@ typedef struct cabeca_queues{
 
 
 
+typedef struct stats{
+    t_comms *ptrArray;
+    int nVoos;
+    int nAterragens;
+    int tempomedioAterrar;
+    int nDescolagens;
+    int tempomedioDescolar;
+    int nmedioHoldings;
+    int nmedioHoldings_urgentes;
+    int nRedirecionados;
+    int rejeitados;
+}t_stats;
 t_comms *arrayshm;
 t_config *configs;
 t_stats *stats;
@@ -133,6 +134,7 @@ pthread_t voosChegada[1000], voosPartida[1000];
 FILE *fp;
 int ut;
 int current_time = 0;
+int shmid2;
 int shmid;
 int mqid;
 int fdpipe;
