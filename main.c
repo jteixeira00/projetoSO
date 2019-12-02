@@ -345,6 +345,54 @@ void *ManageFuel(void *cabeca){
         usleep(ut*1000);
     }
 }
+void *gere_arrivals(void *cabeca){
+	
+	t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
+	while(1){
+
+
+
+
+
+
+		usleep(ut*1000);
+	}
+
+
+
+}
+
+int check_lista(t_queueA *cabecaA){
+
+
+
+
+
+}
+
+
+void *gere_departures(void *cabeca){
+	t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
+	t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
+	int *wait_time;
+	*wait_time = 0;
+	while(1){
+		
+		
+
+
+
+
+
+
+		usleep(ut*1000);
+	}
+
+
+	
+}
+
+
 
 void torreControlo(){
 	sem_wait(escreve_log);
@@ -366,6 +414,16 @@ void torreControlo(){
         perror("Erro a criar a thread tc_managefuel\n");
         exit(1);
     }
+    if(pthread_create(&tc_gere_arrivals, NULL, gere_arrivals, (void*)heads) != 0){
+    	perror("Erro a criar a thread gere_arrivals\n");
+    	exit(1);
+    }
+
+    if(pthread_create(&tc_gere_departures, NULL, gere_departures, (void*)heads) != 0){
+    	perror("Erro a criar a thread gere_departures\n");
+    	exit(1);
+    }
+
     while(1){
     	usleep(ut*1000);
     }
@@ -663,6 +721,8 @@ int main()
     sem_array = sem_open(SEM_ARR, O_CREAT | O_EXCL, 0700, 1);
     sem_unlink(SEM_STATS);
     sem_stats = sem_open(SEM_STATS, O_CREAT | O_EXCL, 0700, 1);
+    sem_unlink(SEM_PISTAS);
+    sem_pistas = sem_open(SEM_PISTAS, O_CREAT | O_EXCL, 07000, 0);
 
     cabeca_vooA = cria_cabecalhovooA();
     cabeca_vooD = cria_cabecalhovooD();

@@ -1,0 +1,12 @@
+18:26:37 Execution start
+18:26:37 Shared memory with ID 5734458 created
+18:26:37 Message Queue with ID 5734458 created
+18:26:40 NEW COMMAND => ARRIVAL TP04 init: 10 eta: 4 fuel: 200
+18:26:42 WOHOO, ARRIVAL FLIGHT TP04 CREATED AT MOMENT 10
+18:26:42 SHARED MEMORY SLOT ATTRIBUTED TO FLIGHT TP4 IS: 0
+18:26:37 Execution start
+18:26:37 Shared memory with ID 5734458 created
+18:26:37 Message Queue with ID 5734458 created
+18:26:37 Control Tower created
+18:26:42 FLIGHT TP4 CONTACTED CONTROL TOWER FOR THE FIRST TIME.
+.18:27:16 Control Tower shut down successfully

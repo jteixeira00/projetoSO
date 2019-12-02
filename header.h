@@ -123,6 +123,7 @@ t_stats *stats;
 sem_t *escreve_log;
 sem_t *sem_array;
 sem_t *sem_stats;
+sem_t *sem_pistas;
 
 pthread_mutex_t readpipe = PTHREAD_MUTEX_INITIALIZER;
 
@@ -131,6 +132,8 @@ pthread_t thread_tempoTC;
 pthread_t thread_check;
 pthread_t tc_msq;
 pthread_t tc_managefuel;
+pthread_t tc_gere_arrivals;
+pthread_t tc_gere_departures;
 pthread_t voosChegada[1000], voosPartida[1000];
 
 FILE *fp;
