@@ -247,15 +247,12 @@ void* lerMQ(void* cabeca){
 	while(1){
 
     	t_message msg;
-        printf("LMAO\n");
         if(msgrcv(mqid, &msg, sizeof(t_message), 99999, 0)==-1){
     		perror("Error na msgrcv memory\n");
             return 0;   		
     	}  
-    	printf("XD\n");
-
     	strcpy(str, "");
-    	sprintf(str, "FLIGHT TP%d CONTACTED CONTROL TOWER FOR THE FIRST TIME\n", msg.id);
+    	sprintf(str, "FLIGHT TP%d CONTACTED CONTROL TOWER FOR THE FIRST TIME.\n.", msg.id);
     	sem_wait(escreve_log);
     	escreverEcra(str);
     	escreverLog(str);
@@ -289,11 +286,23 @@ void* lerMQ(void* cabeca){
             arrayshm[i].fuel = msg.fuel;
             arrayshm[i].tipo = msg.tipo;
             arrayshm[i].isCompleted=0;
+            arrayshm[i].emergency = msg.emergency;
             t_queueA *nodeA = cabecalho->A;
             t_queueA *nodeNovo = (t_queueA*)malloc(sizeof(t_queueA));
-            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)){
-                nodeA = nodeA->prox;
-            }
+            if(arrayshm[i].emergency == 0){
+	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].emergency==1)){
+	                nodeA = nodeA->prox;
+	            }
+	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)){
+	                nodeA = nodeA->prox;
+	            }
+	        }
+	        else{
+	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)&&(arrayshm[nodeA->prox->slot_shm].emergency==1)){
+	                nodeA = nodeA->prox;
+	            }
+
+	        }
             sem_post(sem_array);
             nodeNovo->slot_shm = i;
             nodeNovo->prox = nodeA->prox;
@@ -313,6 +322,7 @@ void *ManageFuel(void *cabeca){
         t_queueA *nodeA = cabecaA;
 
         while((nodeA!=NULL) &&(nodeA->prox!=NULL)){
+        	printf("ID: %d. EMERGENCY: %d\n",arrayshm[nodeA->prox->slot_shm].id,arrayshm[nodeA->prox->slot_shm].emergency);
         	sem_wait(sem_array);
             arrayshm[nodeA->prox->slot_shm].fuel -=1;
             if(arrayshm[nodeA->prox->slot_shm].fuel == 0){
@@ -331,7 +341,8 @@ void *ManageFuel(void *cabeca){
         	sem_post(sem_array);
         	
             nodeA = nodeA->prox;
-        }	
+        }
+        printf("\n");	
         usleep(ut*1000);
     }
 }
@@ -522,8 +533,13 @@ void *chegada(void *node){
     msg.fuel = ((t_vooA*)node)->fuel;
     msg.id = id;
     msg.tipo = 2;
+    if(msg.fuel <= msg.eta + 4 + configs->dAterra){
+       	msg.emergency = 1;
+    }
+    else{
+       	msg.emergency = 0;
+    }
     msgsnd(mqid, &msg, sizeof(t_message), 0);
-    printf("BIG F\n");
 
     msgrcv(mqid, &msg, sizeof(t_message), id, 0);
     shm_slot = msg.slot_shm;
@@ -563,14 +579,14 @@ void *criavoos(){
     int i=0;
     int j=0;
     while(1){
-        
-        if((nodeA->prox!=NULL)&&(current_time==nodeA->prox->init)){
+        int ct = current_time;
+        while((nodeA->prox!=NULL)&&(ct==nodeA->prox->init)){
             pthread_create(&voosChegada[i++], NULL, chegada, (void*)(nodeA->prox));
             nodeA = nodeA->prox;
         }
 
         
-        if((nodeD->prox!=NULL)&&(current_time == nodeD->prox->init)){
+        while((nodeD->prox!=NULL)&&(ct == nodeD->prox->init)){
             pthread_create(&voosPartida[j++], NULL, partida, (void*)(nodeD->prox));
             nodeD = nodeD->prox; 
 

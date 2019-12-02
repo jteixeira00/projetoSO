@@ -83,6 +83,7 @@ typedef struct message{
     int takeoff;
     int tipo; //departure 1, arrival 2
     int slot_shm;
+    int emergency; //emergency 1, not emergency 0
 }t_message;
 
 typedef struct comms{
@@ -94,6 +95,7 @@ typedef struct comms{
     int command; //0 descolar, 1 aterrar, 2 hold, 3 desvio
     int hold_time;
     int isCompleted; //0 incomplete, 1 complete
+    int emergency;
 }t_comms; //shared memory para instruções
 
 typedef struct cabeca_queues{
