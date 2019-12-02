@@ -247,7 +247,7 @@ void* lerMQ(void* cabeca){
 	while(1){
 
     	t_message msg;
-        if(msgrcv(mqid, &msg, sizeof(t_message), 99999, 0)==-1){
+        if(msgrcv(mqid, &msg, sizeof(t_message), -2, 0)==-1){
     		perror("Error na msgrcv memory\n");
             return 0;   		
     	}  
@@ -308,7 +308,7 @@ void* lerMQ(void* cabeca){
             nodeNovo->prox = nodeA->prox;
             nodeA->prox = nodeNovo;
         }
-    	msg.mtype = msg.id;
+    	msg.mtype = msg.id + 2;
     	msg.slot_shm=i++;
     	msgsnd(mqid, &msg, sizeof(t_message), 0);
         
@@ -322,7 +322,7 @@ void *ManageFuel(void *cabeca){
         t_queueA *nodeA = cabecaA;
 
         while((nodeA!=NULL) &&(nodeA->prox!=NULL)){
-        	printf("ID: %d. EMERGENCY: %d\n",arrayshm[nodeA->prox->slot_shm].id,arrayshm[nodeA->prox->slot_shm].emergency);
+        	//printf("ID: %d. EMERGENCY: %d\n",arrayshm[nodeA->prox->slot_shm].id,arrayshm[nodeA->prox->slot_shm].emergency);
         	sem_wait(sem_array);
             arrayshm[nodeA->prox->slot_shm].fuel -=1;
             if(arrayshm[nodeA->prox->slot_shm].fuel == 0){
@@ -342,7 +342,6 @@ void *ManageFuel(void *cabeca){
         	
             nodeA = nodeA->prox;
         }
-        printf("\n");	
         usleep(ut*1000);
     }
 }
@@ -367,7 +366,9 @@ void torreControlo(){
         perror("Erro a criar a thread tc_managefuel\n");
         exit(1);
     }
-    while(1);  
+    while(1){
+    	usleep(ut*1000);
+    }
 }
 
 void lerPipe(){
@@ -460,20 +461,6 @@ void *tempo(){
         
     }
 }
-/*
-void *tempo(){
-    
-    struct timeb t_atual;
-    int current_time;
-
-    while(1){ 
-
-        ftime(&t_atual);
-        current_time = (int)((1000*(t_atual.time-t_inicio.time)+(t_atual.millitm-t_atual.millitm))/ut);
-        printf("%d\n", current_time);    
-    }
-}
-*/
 
 void *partida(void *node){
 
@@ -492,7 +479,7 @@ void *partida(void *node){
 
 
     t_message msg;
-    msg.mtype = 99999;
+    msg.mtype = 2;
     msg.id = id;
     
     msg.takeoff = ((t_vooD*)node)->takeoff;
@@ -501,7 +488,7 @@ void *partida(void *node){
     	perror("departure:msgsnd");
     	exit(1);
     }
-    if(msgrcv(mqid, &msg, sizeof(t_message), id, 0)==-1){
+    if(msgrcv(mqid, &msg, sizeof(t_message), id+2, 0)==-1){
     	perror("departure:msgrcv");
     	exit(1);
     }
@@ -528,20 +515,22 @@ void *chegada(void *node){
     escreverLog(str);
     sem_post(escreve_log);
     t_message msg;
-    msg.mtype = (long)99999;
+    
     msg.eta = ((t_vooA*)node)->eta;
     msg.fuel = ((t_vooA*)node)->fuel;
     msg.id = id;
     msg.tipo = 2;
     if(msg.fuel <= msg.eta + 4 + configs->dAterra){
        	msg.emergency = 1;
+       	msg.mtype = (long)1;
     }
     else{
        	msg.emergency = 0;
+       	msg.mtype = (long)2;
     }
     msgsnd(mqid, &msg, sizeof(t_message), 0);
 
-    msgrcv(mqid, &msg, sizeof(t_message), id, 0);
+    msgrcv(mqid, &msg, sizeof(t_message), id+2, 0);
     shm_slot = msg.slot_shm;
 
     strcpy(str,"");
