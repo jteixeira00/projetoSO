@@ -267,7 +267,7 @@ void* lerMQ(void* cabeca){
             arrayshm[i].takeoff = msg.takeoff;
             arrayshm[i].isCompleted = 0; 
             arrayshm[i].id = msg.id;
-
+            arrayshm[i].init = msg.init;
             t_queueD *node = cabecalho->D;
             t_queueD *nodeNovo = malloc(sizeof(t_queueD));
             while((node->prox!=NULL)&&(arrayshm[node->prox->slot_shm].takeoff<msg.takeoff)){
@@ -280,6 +280,7 @@ void* lerMQ(void* cabeca){
         }
         if(msg.tipo == 2){
         	sem_wait(sem_array);
+            arrayshm[i].init = msg.init;
             arrayshm[i].id = msg.id;
             arrayshm[i].eta = msg.eta;
             arrayshm[i].fuel = msg.fuel;
@@ -346,12 +347,13 @@ void *ManageFuel(void *cabeca){
 }
 
 
-/* DOES NOT WORK NEEDS TO WORK
+//DOES NOT WORK NEEDS TO WORK
 void reinsere(t_queueA *head){
 
     t_queueA *temp_node = head->prox;
     t_queueA *nodeA =head;
     head->prox = head->prox->prox;
+    /*
     sem_wait(sem_array);
     arrayshm[cabecaA->prox->slot_shm].command = 1;
     arrayshm[cabecaA->prox->slot_shm].hold_time = configs->holdMin;
@@ -365,41 +367,14 @@ void reinsere(t_queueA *head){
     sem_post(sem_array);
     temp_node->prox = nodeA->prox;
     nodeA->prox = temp_node;
-}
-
-*/
-void *gere_arrivals(void *cabeca){
-	
-	t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
-    int ncriados;
-    while(1){
-        t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
-        if(arrayshm[cabecaA->prox->slot_shm].eta == current_time){
-            ncriados = check_arrival(cabeca);
-            
-            switch ncriados{
-                case 0:
-                    while(arrayshm[cabecaA->prox->slot_shm].eta == current_time){
-                        reinsere(cabecaA);
-                    }
-
-                case 1:
-                    cabecA->prox = cabecaA->prox->prox;
-
-                case 2:
-                    cabecaA->prox = cabecaA->prox->prox->prox;
-            }
-        }
-        usleep(ut*1000);
-    }
-
+    */
 }
 
 int check_arrival(void* cabeca){
-	t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
-	t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
+    t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
+    t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
 
-	
+    
     if(isBusy){
         
         return 0;
@@ -422,6 +397,36 @@ int check_arrival(void* cabeca){
 }
 
 
+void *gere_arrivals(void *cabeca){
+	
+	
+    int ncriados;
+    while(1){
+        t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
+        if(arrayshm[cabecaA->prox->slot_shm].eta == current_time){
+            ncriados = check_arrival(cabeca);
+            
+            switch (ncriados){
+                case 0:
+                    while(arrayshm[cabecaA->prox->slot_shm].eta == current_time){
+                        reinsere(cabecaA);
+                    }
+
+                case 1:
+                    cabecaA->prox = cabecaA->prox->prox;
+
+                case 2:
+                    cabecaA->prox = cabecaA->prox->prox->prox;
+            }
+        }
+        usleep(ut*1000);
+    }
+
+}
+
+
+
+
 
 
 
@@ -437,10 +442,10 @@ void *gere_departures(void *cabeca){
 
         while((!isBusy) && (arrayshm[cabecaA->prox->slot_shm].eta+arrayshm[cabecaA->prox->slot_shm].init > current_time + configs->dDescola) && (arrayshm[cabecaD->prox->slot_shm].takeoff)>=current_time){
 
-            sem_wait(SEM_ARR);
+            sem_wait(sem_array);
             arrayshm[cabecaD->prox->slot_shm].command = 4;
             cabecaD->prox = cabecaD->prox->prox;
-            sem_post(SEM_ARR);
+            sem_post(sem_array);
         }
         usleep(ut*1000);
     }
@@ -448,7 +453,7 @@ void *gere_departures(void *cabeca){
 
 }
 
-
+*/
 
 void torreControlo(){
 	sem_wait(escreve_log);
@@ -593,6 +598,7 @@ void *partida(void *node){
 
 
     t_message msg;
+    msg.init = ((t_vooD*)node)->init;
     msg.mtype = 2;
     msg.id = id;
     
@@ -629,7 +635,7 @@ void *chegada(void *node){
     escreverLog(str);
     sem_post(escreve_log);
     t_message msg;
-    
+    msg.init = ((t_vooA*)node)->init;
     msg.eta = ((t_vooA*)node)->eta;
     msg.fuel = ((t_vooA*)node)->fuel;
     msg.id = id;

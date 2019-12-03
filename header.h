@@ -82,6 +82,7 @@ typedef struct queueD{
 
 typedef struct message{
     long mtype;
+    int init;
     int id; 
     int eta;
     int fuel;
@@ -93,11 +94,12 @@ typedef struct message{
 
 typedef struct comms{
     int id;
+    int init;
     int eta;
     int fuel;
     int takeoff;
     int tipo; //departure 1, arrival 2
-    int command; //0 descolar, 1 aterrar, 2 hold, 3 desvio
+    int command; //4 descolar, 1 aterrar, 2 hold, 3 desvio
     int hold_time;
     int isCompleted; //0 incomplete, 1 complete
     int emergency;
