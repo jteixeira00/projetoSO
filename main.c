@@ -345,11 +345,19 @@ void *ManageFuel(void *cabeca){
     }
 }
 
+
+/* DOES NOT WORK NEEDS TO WORK
 void reinsere(t_queueA *head){
 
     t_queueA *temp_node = head->prox;
     t_queueA *nodeA =head;
     head->prox = head->prox->prox;
+    sem_wait(sem_array);
+    arrayshm[cabecaA->prox->slot_shm].command = 1;
+    arrayshm[cabecaA->prox->slot_shm].hold_time = configs->holdMin;
+    arrayshm[cabecaA->prox->slot_shm].eta += configs->holdMin;
+    sem_post(sem_array);
+
     sem_wait(sem_array);
     while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)&&(arrayshm[nodeA->prox->slot_shm].emergency==1)){
         nodeA = nodeA->prox;
@@ -359,22 +367,28 @@ void reinsere(t_queueA *head){
     nodeA->prox = temp_node;
 }
 
+*/
 void *gere_arrivals(void *cabeca){
 	
 	t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
     int ncriados;
     while(1){
-        ncriados = check_arrival(cabeca);
+        t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
+        if(arrayshm[cabecaA->prox->slot_shm].eta == current_time){
+            ncriados = check_arrival(cabeca);
+            
+            switch ncriados{
+                case 0:
+                    while(arrayshm[cabecaA->prox->slot_shm].eta == current_time){
+                        reinsere(cabecaA);
+                    }
 
-        switch ncriados{
-            case 0:
-                reinsere(cabecaA);
+                case 1:
+                    cabecA->prox = cabecaA->prox->prox;
 
-            case 1:
-                cabecA->prox = cabecaA->prox->prox;
-
-            case 2:
-                cabecaA->prox = cabecaA->prox->prox;
+                case 2:
+                    cabecaA->prox = cabecaA->prox->prox->prox;
+            }
         }
         usleep(ut*1000);
     }
@@ -387,12 +401,8 @@ int check_arrival(void* cabeca){
 
 	
     if(isBusy){
-        sem_wait(sem_array);
-        arrayshm[cabecaA->prox->slot_shm].command = 1;
-        arrayshm[cabecaA->prox->slot_shm].hold_time = configs->holdMin;
-        arrayshm[cabecaA->prox->slot_shm].eta += configs->holdMin;
-        sem_post(sem_array);
-        retun 0;
+        
+        return 0;
     }
     if(!isBusy){
         sem_wait(sem_array);
@@ -423,6 +433,17 @@ void *gere_departures(void *cabeca){
 	t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
 	int *wait_time;
 	*wait_time = 0;
+    while(1){
+
+        while((!isBusy) && (arrayshm[cabecaA->prox->slot_shm].eta+arrayshm[cabecaA->prox->slot_shm].init > current_time + configs->dDescola) && (arrayshm[cabecaD->prox->slot_shm].takeoff)>=current_time){
+
+            sem_wait(SEM_ARR);
+            arrayshm[cabecaD->prox->slot_shm].command = 4;
+            cabecaD->prox = cabecaD->prox->prox;
+            sem_post(SEM_ARR);
+        }
+        usleep(ut*1000);
+    }
 	
 
 }
