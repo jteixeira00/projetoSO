@@ -1,10 +1,7 @@
-13:48:20 Execution start
-13:48:20 Shared memory with ID 1179657 created
-13:48:20 Message Queue with ID 1179657 created
-13:48:22 NEW COMMAND => ARRIVAL TP3 init: 10 eta: 20 fuel: 100
-13:48:24 WOHOO, ARRIVAL FLIGHT TP3 CREATED AT MOMENT 10
-13:49:10 Message Queue terminated successfully
-13:49:10 Shared Memory terminated successfully
-13:49:10 SHARED MEMORY SLOT ATTRIBUTED TO FLIGHT TP3 IS: 0
-13:49:10 Named Pipe closed successfully
-13:49:10 PROGRAM SHUT DOWN WITH CTRL+C
+16:56:07 Execution start
+16:56:07 Shared memory with ID 1769481 created
+16:56:07 Message Queue with ID 1769481 created
+16:56:08 Message Queue terminated successfully
+16:56:08 Shared Memory terminated successfully
+16:56:08 Named Pipe closed successfully
+16:56:08 PROGRAM SHUT DOWN WITH CTRL+C

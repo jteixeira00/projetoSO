@@ -352,12 +352,13 @@ void reinsere(t_queueA *head){
 
     t_queueA *temp_node = head->prox;
     t_queueA *nodeA =head;
+    t_message msg = msg;
     head->prox = head->prox->prox;
-    /*
+    
     sem_wait(sem_array);
-    arrayshm[cabecaA->prox->slot_shm].command = 1;
-    arrayshm[cabecaA->prox->slot_shm].hold_time = configs->holdMin;
-    arrayshm[cabecaA->prox->slot_shm].eta += configs->holdMin;
+    arrayshm[nodeA->prox->slot_shm].command = 1;
+    arrayshm[nodeA->prox->slot_shm].hold_time = configs->holdMin;
+    arrayshm[nodeA->prox->slot_shm].eta += configs->holdMin;
     sem_post(sem_array);
 
     sem_wait(sem_array);
@@ -367,10 +368,11 @@ void reinsere(t_queueA *head){
     sem_post(sem_array);
     temp_node->prox = nodeA->prox;
     nodeA->prox = temp_node;
-    */
+    
 }
 
 int check_arrival(void* cabeca){
+	printf("CHECKA ARRIVAL\n");
     t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
     t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
 
@@ -379,7 +381,7 @@ int check_arrival(void* cabeca){
         
         return 0;
     }
-    if(!isBusy){
+    else{
         sem_wait(sem_array);
         if(arrayshm[cabecaA->prox->prox->slot_shm].eta == arrayshm[cabecaA->prox->slot_shm].eta){
             arrayshm[cabecaA->prox->prox->slot_shm].command = 1;
@@ -393,17 +395,19 @@ int check_arrival(void* cabeca){
             return 1;
         }
     }
+    return 0;
 
 }
 
 
 void *gere_arrivals(void *cabeca){
+	printf("GERA\n");
 	
 	
     int ncriados;
     while(1){
         t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
-        if(arrayshm[cabecaA->prox->slot_shm].eta == current_time){
+        if(arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init /*NEW SHIT*/  == current_time){
             ncriados = check_arrival(cabeca);
             
             switch (ncriados){
@@ -436,8 +440,7 @@ void *gere_arrivals(void *cabeca){
 void *gere_departures(void *cabeca){
 	t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
 	t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
-	int *wait_time;
-	*wait_time = 0;
+	int *wait_time = 0;
     while(1){
 
         while((!isBusy) && (arrayshm[cabecaA->prox->slot_shm].eta+arrayshm[cabecaA->prox->slot_shm].init > current_time + configs->dDescola) && (arrayshm[cabecaD->prox->slot_shm].takeoff)>=current_time){
@@ -453,7 +456,7 @@ void *gere_departures(void *cabeca){
 
 }
 
-*/
+
 
 void torreControlo(){
 	sem_wait(escreve_log);

@@ -36,10 +36,6 @@ struct timeb t_inicio;
 #define SIZE 200
 
 
-
-
-
-
 typedef struct vooA{
     char *nome;
     int init;
@@ -82,10 +78,10 @@ typedef struct queueD{
 
 typedef struct message{
     long mtype;
-    int init;
     int id; 
     int eta;
     int fuel;
+    int init;
     int takeoff;
     int tipo; //departure 1, arrival 2
     int slot_shm;
@@ -99,7 +95,7 @@ typedef struct comms{
     int fuel;
     int takeoff;
     int tipo; //departure 1, arrival 2
-    int command; //4 descolar, 1 aterrar, 2 hold, 3 desvio
+    int command; //0 descolar, 1 aterrar, 2 hold, 3 desvio
     int hold_time;
     int isCompleted; //0 incomplete, 1 complete
     int emergency;
@@ -153,34 +149,5 @@ int fdpipe;
 char comando[SIZE];
 int isBusy;
 
-t_vooA *cria_cabecalhovooA(void);
-t_vooD *cria_cabecalhovooD(void);
-t_queueD* cria_cabecalhoqueueD(void);
-t_queueA* cria_cabecalhoqueueA(void);
-void criarLog();
-
-void insereOrdenadoA(char *nome, int init, int eta, int fuel, t_vooA *cabeca_vooA);
-void escreverEcra(char message[]);
-void escreverLog(char message[]);
-void lerConfig();
-void criarSHM();
-void criarMQ();
-void criarPipe();
-int verificaD(char* string);
-int verificaA(char* string);
-void* lerMQ(void* cabeca);
-void *ManageFuel(void *cabeca);
-void *gere_arrivals(void *cabeca);
-int check_lista(void* cabeca);
-void *gere_departures(void *cabeca);
-void torreControlo();
-void lerPipe();
-void *tempo();
-void *partida(void *node);
-void *chegada(void *node);
-void *criavoos();
-void acabar();
-void acabarTC();
-void inicializa_stats();
 #endif // HEADER_H_INCLUDED
 
