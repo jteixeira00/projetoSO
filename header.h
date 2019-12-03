@@ -29,10 +29,15 @@ struct timeb t_inicio;
 #define SEM_LOG "SEM_LOG"
 #define SEM_ARR "SEM_ARRAY"
 #define SEM_STATS "SEM_STATS"
+#define SEM_PISTAS "SEM_PISTAS"
 
 #define MAX_C 150
 #define PIPE "pipe"
 #define SIZE 200
+
+
+
+
 
 
 typedef struct vooA{
@@ -144,5 +149,36 @@ int shmid;
 int mqid;
 int fdpipe;
 char comando[SIZE];
+int isBusy;
+
+t_vooA *cria_cabecalhovooA(void);
+t_vooD *cria_cabecalhovooD(void);
+t_queueD* cria_cabecalhoqueueD(void);
+t_queueA* cria_cabecalhoqueueA(void);
+void criarLog();
+
+void insereOrdenadoA(char *nome, int init, int eta, int fuel, t_vooA *cabeca_vooA);
+void escreverEcra(char message[]);
+void escreverLog(char message[]);
+void lerConfig();
+void criarSHM();
+void criarMQ();
+void criarPipe();
+int verificaD(char* string);
+int verificaA(char* string);
+void* lerMQ(void* cabeca);
+void *ManageFuel(void *cabeca);
+void *gere_arrivals(void *cabeca);
+int check_lista(void* cabeca);
+void *gere_departures(void *cabeca);
+void torreControlo();
+void lerPipe();
+void *tempo();
+void *partida(void *node);
+void *chegada(void *node);
+void *criavoos();
+void acabar();
+void acabarTC();
+void inicializa_stats();
 #endif // HEADER_H_INCLUDED
 
