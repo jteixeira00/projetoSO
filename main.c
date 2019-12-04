@@ -1,6 +1,15 @@
 //Dinis Silva Costa Carvalho, nº 2018278118
 //João Pimentel Roque Rodrigues Teixeira, nº 2018278532
 
+
+/* Voos receberem instruções | holding +5 | pistas ocupadas tempo certo | partir as despartures optimizied | Sinais | atualizar escrever log | atualizar escrever stats | escrver stats CRL C | Fazer o Relatório */
+
+/*1 empty & 1 full arrivals e 1 empty & 1 full para departures para dar o sleep necessário 
+que cada voo é obrigado: 
+duração da descolagem (T, em ut), intervalo entre descolagem (dt, em ut)
+duração da aterragem (L, em ut), intervalo entre aterragens (dl, em ut)
+*/
+
 #include "header.h"
 t_vooA *cabeca_vooA;
 t_vooD *cabeca_vooD;
@@ -373,7 +382,6 @@ void reinsere(t_queueA *head){
 
 int check_arrival(void* cabeca){
 	
-    t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
     t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
 
     
@@ -382,13 +390,39 @@ int check_arrival(void* cabeca){
         if((cabecaA->prox->prox!=NULL) && (arrayshm[cabecaA->prox->prox->slot_shm].eta == arrayshm[cabecaA->prox->slot_shm].eta)){
             arrayshm[cabecaA->prox->prox->slot_shm].command = 1;
             arrayshm[cabecaA->prox->slot_shm].command = 1;
-            printf("ATERRARAM 2\n");
+            printf("ATERRARAM 2 ARRIVAL\n");
             sem_post(sem_array);
             return 2;
         }
         else{
             arrayshm[cabecaA->prox->slot_shm].command = 1;
-            printf("VOU ATERRAR;\n");
+            printf("ATERROU 1 ARRIVAL\n");
+            sem_post(sem_array);
+            return 1;
+        }
+    
+    return 0;
+    
+
+}
+
+int check_departure(void* cabeca){
+    
+    t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
+
+    
+    
+        sem_wait(sem_array);
+        if((cabecaD->prox->prox!=NULL) && (arrayshm[cabecaD->prox->prox->slot_shm].takeoff == arrayshm[cabecaD->prox->slot_shm].takeoff)){
+            arrayshm[cabecaD->prox->prox->slot_shm].command = 1;
+            arrayshm[cabecaD->prox->slot_shm].command = 1;
+            printf("SAIRAM 2 DEPARTURE\n");
+            sem_post(sem_array);
+            return 2;
+        }
+        else{
+            arrayshm[cabecaD->prox->slot_shm].command = 1;
+            printf("SAIU 1 DEPARTURE\n");
             sem_post(sem_array);
             return 1;
         }
@@ -399,27 +433,20 @@ int check_arrival(void* cabeca){
 }
 
 
+
 void *gere_arrivals(void *cabeca){
     int ncriados;
     while(1){
-        printf("ESPEROU\n");
         sem_wait(sem_arrival_full);
-        printf("FUI\n");
         t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
         if(cabecaA->prox!=NULL){
             if(arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init /*completar*/ <= current_time){
                 ncriados = check_arrival(cabeca);
                 switch (ncriados){
-                    case 0:
-                        while(arrayshm[cabecaA->prox->slot_shm].eta == current_time){
-                            reinsere(cabecaA);
-                        }
-                        break;
-                        
+                         
                     case 1:
-                    printf("HEY\n");
                         cabecaA->prox = cabecaA->prox->prox;
-                    printf("HAAAAAAA\n");
+
                     break;
                     
                     case 2:
@@ -432,59 +459,48 @@ void *gere_arrivals(void *cabeca){
             }
            
         }
-        printf("babana\n");
         if((cabecaA->prox!=NULL)&&(arrayshm[cabecaA->prox->slot_shm].eta  +arrayshm[cabecaA->prox->slot_shm].init <current_time)){
             usleep(ut*1000);
         }
-        printf("LMAO\n");
-        
-        sem_post(sem_arrival_empty);
+
+        if(cabecaA->prox == NULL){
+            printf("ARRIVAL EMPTY\n");    
+            sem_post(sem_arrival_empty);
+        }
+        else{
+            printf("ARRIVAL FULL\n");
+            sem_post(sem_arrival_full);
+            usleep(ut*1000);
+        }
         
     }   
 }
 
 
 void *gere_departures(void *cabeca){
-    printf("VIM AQUI\n");
-	t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
-	t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
-	int *wait_time = 0;
-    
+    int ncriados;
     while(1){
-
         sem_wait(sem_arrival_empty);
+        t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
         printf("FDS\n");
+        if(cabecaD->prox!=NULL){
+            if(arrayshm[cabecaD->prox->slot_shm].takeoff/*completar*/ <= current_time){
+                ncriados = check_departure(cabeca);
+                switch (ncriados){
+                    case 1:
+                        cabecaD->prox = cabecaD->prox->prox;
+                    break;
+                    
+                    case 2:
+                        cabecaD->prox = cabecaD->prox->prox->prox;
+                        break;
+                        
 
-         /*if(cabecaA->prox!=NULL){
-            printf("%d %d %d",arrayshm[cabecaD->prox->slot_shm].takeoff,arrayshm[cabecaD->prox->slot_shm].init,current_time);
-            if(arrayshm[cabecaD->prox->slot_shm].takeoff + arrayshm[cabecaD->prox->slot_shm].init >= current_time){
-                cabecaD->prox = cabecaD->prox->prox;
-                printf("FOI SE DEPARTURE\n");
+                }
+                
             }
-        }*/
-       /* if(cabecaA->prox ==NULL){
-            while((arrayshm[cabecaD->prox->slot_shm].takeoff)>=current_time){
-
-                sem_wait(sem_array);
-                arrayshm[cabecaD->prox->slot_shm].command = 4;
-                printf("VOO DEPARTUTE FOI SE\n");
-                cabecaD->prox = cabecaD->prox->prox;
-                sem_post(sem_array);
-            }
-
+           
         }
-
-        else{
-
-            while(((cabecaA->prox!=NULL) && (cabecaD->prox!=NULL) && (arrayshm[cabecaA->prox->slot_shm].eta+arrayshm[cabecaA->prox->slot_shm].init > current_time + configs->dDescola) && (arrayshm[cabecaD->prox->slot_shm].takeoff)>=current_time)){
-
-                sem_wait(sem_array);
-                arrayshm[cabecaD->prox->slot_shm].command = 4;
-               printf("VOO DEPARTUTE FOI SE\n");
-                cabecaD->prox = cabecaD->prox->prox;
-                sem_post(sem_array);
-            }
-        }*/
         sem_post(sem_arrival_full);
         usleep(ut*1000);
     }
@@ -777,10 +793,24 @@ void acabar(){
     escreverEcra("Named Pipe closed successfully\n\n");
     escreverLog("Named Pipe closed successfully\n");
     sem_post(escreve_log);
+    sem_unlink(SEM_ARR);
+    sem_close(sem_array);
+    sem_unlink(SEM_ARRIVAL_EMPTY);
+    sem_close(sem_arrival_empty);
+    sem_unlink(SEM_STATS);
+    sem_close(sem_stats);
+    sem_unlink(SEM_ARRIVAL_FULL);
+    sem_close(sem_arrival_full);
+    sem_wait(escreve_log);
+    escreverEcra("Sempahores closed successfully\n\n");
+    escreverLog("Semaphores closed successfully\n");
+    sem_post(escreve_log);
     sem_wait(escreve_log);
     escreverEcra("PROGRAM SHUT DOWN WITH CTRL+C\n\n");
     escreverLog("PROGRAM SHUT DOWN WITH CTRL+C\n");
     sem_post(escreve_log);
+    sem_unlink(SEM_LOG);
+    sem_close(escreve_log);
     fclose(fp);
     kill(0, SIGKILL);
     exit(0);
