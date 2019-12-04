@@ -29,7 +29,12 @@ struct timeb t_inicio;
 #define SEM_LOG "SEM_LOG"
 #define SEM_ARR "SEM_ARRAY"
 #define SEM_STATS "SEM_STATS"
-#define SEM_PISTAS "SEM_PISTAS"
+#define SEM_DEP "SEM_DEP"
+#define SEM_ARRI "SEM_ARR"
+#define SEM_ARRIVAL_EMPTY "EMPTY"
+#define SEM_ARRIVAL_FULL "FULL"
+
+#define SEM_BUSY "SEM_BUSY"
 
 #define MAX_C 150
 #define PIPE "pipe"
@@ -127,6 +132,8 @@ sem_t *escreve_log;
 sem_t *sem_array;
 sem_t *sem_stats;
 sem_t *sem_pistas;
+sem_t *sem_arrival_empty;
+sem_t *sem_arrival_full;
 
 pthread_mutex_t readpipe = PTHREAD_MUTEX_INITIALIZER;
 
@@ -137,6 +144,7 @@ pthread_t tc_msq;
 pthread_t tc_managefuel;
 pthread_t tc_gere_arrivals;
 pthread_t tc_gere_departures;
+pthread_t tc_busyManagement;
 pthread_t voosChegada[1000], voosPartida[1000];
 
 FILE *fp;
@@ -148,6 +156,7 @@ int mqid;
 int fdpipe;
 char comando[SIZE];
 int isBusy;
+
 
 #endif // HEADER_H_INCLUDED
 

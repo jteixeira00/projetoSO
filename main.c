@@ -377,12 +377,7 @@ int check_arrival(void* cabeca){
     t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
 
     
-    if(isBusy){
-        
-        return 0;
-    }
-    else{
-        
+    
         sem_wait(sem_array);
         if((cabecaA->prox->prox!=NULL) && (arrayshm[cabecaA->prox->prox->slot_shm].eta == arrayshm[cabecaA->prox->slot_shm].eta)){
             arrayshm[cabecaA->prox->prox->slot_shm].command = 1;
@@ -397,7 +392,7 @@ int check_arrival(void* cabeca){
             sem_post(sem_array);
             return 1;
         }
-    }
+    
     return 0;
     
 
@@ -407,33 +402,46 @@ int check_arrival(void* cabeca){
 void *gere_arrivals(void *cabeca){
     int ncriados;
     while(1){
+        printf("ESPEROU\n");
+        sem_wait(sem_arrival_full);
+        printf("FUI\n");
         t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
         if(cabecaA->prox!=NULL){
-            if(arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init /*NEW SHIT*/  == current_time){
+            if(arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init /*completar*/ <= current_time){
                 ncriados = check_arrival(cabeca);
-               
-                
                 switch (ncriados){
                     case 0:
                         while(arrayshm[cabecaA->prox->slot_shm].eta == current_time){
                             reinsere(cabecaA);
                         }
+                        break;
+                        
                     case 1:
+                    printf("HEY\n");
                         cabecaA->prox = cabecaA->prox->prox;
+                    printf("HAAAAAAA\n");
+                    break;
+                    
                     case 2:
                         cabecaA->prox = cabecaA->prox->prox->prox;
+                        break;
+                        
+
                 }
                 
             }
+           
         }
-        usleep(ut*1000);
-
-    }
-    
-
+        printf("babana\n");
+        if((cabecaA->prox!=NULL)&&(arrayshm[cabecaA->prox->slot_shm].eta  +arrayshm[cabecaA->prox->slot_shm].init <current_time)){
+            usleep(ut*1000);
+        }
+        printf("LMAO\n");
+        
+        sem_post(sem_arrival_empty);
+        
+    }   
 }
-
-
 
 
 void *gere_departures(void *cabeca){
@@ -444,21 +452,55 @@ void *gere_departures(void *cabeca){
     
     while(1){
 
-        while((cabecaA->prox!=NULL) && (!isBusy) && (arrayshm[cabecaA->prox->slot_shm].eta+arrayshm[cabecaA->prox->slot_shm].init > current_time + configs->dDescola) && (arrayshm[cabecaD->prox->slot_shm].takeoff)>=current_time){
+        sem_wait(sem_arrival_empty);
+        printf("FDS\n");
 
-            sem_wait(sem_array);
-            arrayshm[cabecaD->prox->slot_shm].command = 4;
-            cabecaD->prox = cabecaD->prox->prox;
-            sem_post(sem_array);
+         /*if(cabecaA->prox!=NULL){
+            printf("%d %d %d",arrayshm[cabecaD->prox->slot_shm].takeoff,arrayshm[cabecaD->prox->slot_shm].init,current_time);
+            if(arrayshm[cabecaD->prox->slot_shm].takeoff + arrayshm[cabecaD->prox->slot_shm].init >= current_time){
+                cabecaD->prox = cabecaD->prox->prox;
+                printf("FOI SE DEPARTURE\n");
+            }
+        }*/
+       /* if(cabecaA->prox ==NULL){
+            while((arrayshm[cabecaD->prox->slot_shm].takeoff)>=current_time){
+
+                sem_wait(sem_array);
+                arrayshm[cabecaD->prox->slot_shm].command = 4;
+                printf("VOO DEPARTUTE FOI SE\n");
+                cabecaD->prox = cabecaD->prox->prox;
+                sem_post(sem_array);
+            }
+
         }
+
+        else{
+
+            while(((cabecaA->prox!=NULL) && (cabecaD->prox!=NULL) && (arrayshm[cabecaA->prox->slot_shm].eta+arrayshm[cabecaA->prox->slot_shm].init > current_time + configs->dDescola) && (arrayshm[cabecaD->prox->slot_shm].takeoff)>=current_time)){
+
+                sem_wait(sem_array);
+                arrayshm[cabecaD->prox->slot_shm].command = 4;
+               printf("VOO DEPARTUTE FOI SE\n");
+                cabecaD->prox = cabecaD->prox->prox;
+                sem_post(sem_array);
+            }
+        }*/
+        sem_post(sem_arrival_full);
         usleep(ut*1000);
     }
-    
-	
-
 }
 
+/*void *gere_busy(void *cabeca){
+    t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
+    t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
+    while(1){
+        sem_wait(sem_busy);
+        switch (last_flight):
+            case 1:
+                if()
 
+    }
+}*/
 
 void torreControlo(){
 	sem_wait(escreve_log);
@@ -489,6 +531,10 @@ void torreControlo(){
     	perror("Erro a criar a thread gere_departures\n");
     	exit(1);
     }
+    /*if(pthread_create(&tc_busyManagement, NULL, gere_busy, (void*)heads) != 0){
+        perror("Erro a criar a thread gere_busy\n");
+        exit(1);
+    }*/
 
     while(1){
     	usleep(ut*1000);
@@ -789,8 +835,12 @@ int main()
     sem_array = sem_open(SEM_ARR, O_CREAT | O_EXCL, 0700, 1);
     sem_unlink(SEM_STATS);
     sem_stats = sem_open(SEM_STATS, O_CREAT | O_EXCL, 0700, 1);
-    sem_unlink(SEM_PISTAS);
-    sem_pistas = sem_open(SEM_PISTAS, O_CREAT | O_EXCL, 07000, 0);
+    //sem_unlink(SEM_BUSY);
+    //sem_busy = sem_open(SEM_BUSY, O_CREAT | O_EXCL, 0700, 1);
+    sem_unlink(SEM_ARRIVAL_EMPTY);
+    sem_arrival_empty = sem_open(SEM_ARRIVAL_EMPTY, O_CREAT | O_EXCL, 0700,0);
+    sem_unlink(SEM_ARRIVAL_FULL);
+    sem_arrival_full = sem_open(SEM_ARRIVAL_FULL, O_CREAT | O_EXCL, 0700,1);
 
     cabeca_vooA = cria_cabecalhovooA();
     cabeca_vooD = cria_cabecalhovooD();
@@ -804,7 +854,7 @@ int main()
     inicializa_stats();
     criarMQ();
     criarPipe();
-    isBusy = 0;
+   
     
     if(fork()==0){
     	if(pthread_create(&thread_tempoTC, NULL, tempo, NULL)!=0){
