@@ -349,7 +349,7 @@ void *ManageFuel(void *cabeca){
 
 //DOES NOT WORK NEEDS TO WORK
 void reinsere(t_queueA *head){
-
+    printf("here\n");
     t_queueA *temp_node = head->prox;
     t_queueA *nodeA =head;
     t_message msg = msg;
@@ -372,7 +372,7 @@ void reinsere(t_queueA *head){
 }
 
 int check_arrival(void* cabeca){
-	printf("CHECKA ARRIVAL\n");
+	
     t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
     t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
 
@@ -382,68 +382,69 @@ int check_arrival(void* cabeca){
         return 0;
     }
     else{
+        
         sem_wait(sem_array);
-        if(arrayshm[cabecaA->prox->prox->slot_shm].eta == arrayshm[cabecaA->prox->slot_shm].eta){
+        if((cabecaA->prox->prox!=NULL) && (arrayshm[cabecaA->prox->prox->slot_shm].eta == arrayshm[cabecaA->prox->slot_shm].eta)){
             arrayshm[cabecaA->prox->prox->slot_shm].command = 1;
             arrayshm[cabecaA->prox->slot_shm].command = 1;
+            printf("ATERRARAM 2\n");
             sem_post(sem_array);
             return 2;
         }
-        if(arrayshm[cabecaA->prox->prox->slot_shm].eta != arrayshm[cabecaA->prox->slot_shm].eta){
+        else{
             arrayshm[cabecaA->prox->slot_shm].command = 1;
+            printf("VOU ATERRAR;\n");
             sem_post(sem_array);
             return 1;
         }
     }
     return 0;
+    
 
 }
 
 
 void *gere_arrivals(void *cabeca){
-	printf("GERA\n");
-	
-	
     int ncriados;
     while(1){
         t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
-        if(arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init /*NEW SHIT*/  == current_time){
-            ncriados = check_arrival(cabeca);
-            
-            switch (ncriados){
-                case 0:
-                    while(arrayshm[cabecaA->prox->slot_shm].eta == current_time){
-                        reinsere(cabecaA);
-                    }
-
-                case 1:
-                    cabecaA->prox = cabecaA->prox->prox;
-
-                case 2:
-                    cabecaA->prox = cabecaA->prox->prox->prox;
+        if(cabecaA->prox!=NULL){
+            if(arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init /*NEW SHIT*/  == current_time){
+                ncriados = check_arrival(cabeca);
+               
+                
+                switch (ncriados){
+                    case 0:
+                        while(arrayshm[cabecaA->prox->slot_shm].eta == current_time){
+                            reinsere(cabecaA);
+                        }
+                    case 1:
+                        cabecaA->prox = cabecaA->prox->prox;
+                    case 2:
+                        cabecaA->prox = cabecaA->prox->prox->prox;
+                }
+                
             }
         }
         usleep(ut*1000);
+
     }
+    
 
 }
 
 
 
 
-
-
-
-
-
-
 void *gere_departures(void *cabeca){
+    printf("VIM AQUI\n");
 	t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
 	t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
 	int *wait_time = 0;
+    
     while(1){
 
-        while((!isBusy) && (arrayshm[cabecaA->prox->slot_shm].eta+arrayshm[cabecaA->prox->slot_shm].init > current_time + configs->dDescola) && (arrayshm[cabecaD->prox->slot_shm].takeoff)>=current_time){
+        while((cabecaA->prox!=NULL) && (!isBusy) && (arrayshm[cabecaA->prox->slot_shm].eta+arrayshm[cabecaA->prox->slot_shm].init > current_time + configs->dDescola) && (arrayshm[cabecaD->prox->slot_shm].takeoff)>=current_time){
 
             sem_wait(sem_array);
             arrayshm[cabecaD->prox->slot_shm].command = 4;
@@ -452,6 +453,7 @@ void *gere_departures(void *cabeca){
         }
         usleep(ut*1000);
     }
+    
 	
 
 }
@@ -751,7 +753,7 @@ void acabarTC(){
 }
 
 void inicializa_stats(){
-	stats->nVoos =10000;
+	stats->nVoos =0;
 	stats->nAterragens = 0;
 	stats->tempomedioAterrar=0;
 	stats->nDescolagens = 0;
@@ -802,6 +804,7 @@ int main()
     inicializa_stats();
     criarMQ();
     criarPipe();
+    isBusy = 0;
     
     if(fork()==0){
     	if(pthread_create(&thread_tempoTC, NULL, tempo, NULL)!=0){
