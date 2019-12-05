@@ -6,8 +6,11 @@
 
 /*1 empty & 1 full arrivals e 1 empty & 1 full para departures para dar o sleep necessário 
 que cada voo é obrigado: 
+
 duração da descolagem (T, em ut), intervalo entre descolagem (dt, em ut)
 duração da aterragem (L, em ut), intervalo entre aterragens (dl, em ut)
+
+semaforos a ser geridos nos voos em vez de na TC
 */
 
 #include "header.h"
@@ -429,7 +432,6 @@ int check_departure(void* cabeca){
     
     return 0;
     
-
 }
 
 
@@ -726,7 +728,8 @@ void *chegada(void *node){
     escreverEcra(str);
     escreverLog(str);
     sem_post(escreve_log);
-    while(1){
+    
+    /*while(1){
     	sem_wait(sem_array);
     	if(arrayshm[shm_slot].isCompleted){
     		strcpy(str,"");
@@ -738,7 +741,86 @@ void *chegada(void *node){
     		break;
     	}
     	sem_post(sem_array);
-    	sleep(ut*1000);
+    	usleep(ut*1000);
+    }*/
+    sem_wait(sem_array);
+    int ordem = arrayshm[shm_slot].command;
+    sem_post(sem_array);
+    while((ordem != 1) && (ordem!=3)){
+        if(ordem == 2){
+
+            strcpy(str,"");
+            sprintf(str, "FLIGHT TP%d RECEIVED COMMAND TO HOLD FOR %d TIME UNITS", id, );
+            sem_wait(escreve_log);
+            escreverEcra(str);
+            escreverLog(str);
+            sem_post(escreve_log);
+        }
+
+        usleep(ut*1000)
+        sem_wait(sem_array);
+        int ordem = arrayshm[shm_slot].command;
+        sem_post(sem_array);
+    }
+    
+    if(ordem == 1){
+        if(arrayshm[shm_slot].pista == 1){
+            strcpy(str,"");
+            sprintf(str, "FLIGHT TP%d RECEIVED COMMAND TO LAND IN TRACK 28L", id);
+            sem_wait(escreve_log);
+            escreverEcra(str);
+            escreverLog(str);
+            sem_post(escreve_log);
+
+            sem_wait(sem_pistaa1);
+
+            strcpy(str,"");
+            sprintf(str, "FLIGHT TP%d WILL START LANDING IN TRACK 28L", id);
+            sem_wait(escreve_log);
+            escreverEcra(str);
+            escreverLog(str);
+            sem_post(escreve_log);
+
+            usleep(config->dAterra *1000);
+            strcpy(str,"");
+            sprintf(str, "FLIGHT TP%d HAS FINISHED LANDING, FREEING UP TRACK 28L", id);
+            sem_wait(escreve_log);
+            escreverEcra(str);
+            escreverLog(str);
+            sem_post(escreve_log);
+            sem_post(sem_pistaa1);
+        }
+        if(arrayshm[shm_slot].pista == 2){
+            strcpy(str,"");
+            sprintf(str, "FLIGHT TP%d RECEIVED COMMAND TO LAND IN TRACK 28R", id);
+            sem_wait(escreve_log);
+            escreverEcra(str);
+            escreverLog(str);
+            sem_post(escreve_log);
+
+            sem_wait(sem_pistaa1);
+
+            strcpy(str,"");
+            sprintf(str, "FLIGHT TP%d WILL START LANDING IN TRACK 28R", id);
+            sem_wait(escreve_log);
+            escreverEcra(str);
+            escreverLog(str);
+            sem_post(escreve_log);
+            usleep(config->dAterra *1000);
+            strcpy(str,"");
+            sprintf(str, "FLIGHT TP%d HAS FINISHED LANDING, FREEING UP TRACK 28R", id);
+            sem_wait(escreve_log);
+            escreverEcra(str);
+            escreverLog(str);
+            sem_post(escreve_log);
+            sem_post(sem_pistaa1);
+        }
+    if(ordem == 3){
+
+
+        
+
+
     }
 
 
@@ -871,7 +953,15 @@ int main()
     sem_arrival_empty = sem_open(SEM_ARRIVAL_EMPTY, O_CREAT | O_EXCL, 0700,0);
     sem_unlink(SEM_ARRIVAL_FULL);
     sem_arrival_full = sem_open(SEM_ARRIVAL_FULL, O_CREAT | O_EXCL, 0700,1);
-
+    sem_unlink(SEM_A1);
+    sem_pistaa1 = sem_open(SEM_A1, O_CREAT | O_EXCL, 0700. 1);
+    sem_unlink(SEM_A2);
+    sem_pistaa2 = sem_open(SEM_A2, O_CREAT | O_EXCL, 0700. 1);
+    sem_unlink(SEM_D1);
+    sem_pistad1 = sem_open(SEM_D1, O_CREAT | O_EXCL, 0700. 1);
+    sem_unlink(SEM_D2);
+    sem_pistad2 = sem_open(SEM_D2, O_CREAT | O_EXCL, 0700. 1);
+    
     cabeca_vooA = cria_cabecalhovooA();
     cabeca_vooD = cria_cabecalhovooD();
     //cria log.txt e escreve

@@ -34,6 +34,11 @@ struct timeb t_inicio;
 #define SEM_ARRIVAL_EMPTY "EMPTY"
 #define SEM_ARRIVAL_FULL "FULL"
 
+#define SEM_A1 "SEM_A1"
+#define SEM_A2 "SEM_A2"
+#define SEM_D1 "SEM_D1"
+#define SEM_D2 "SEM_D2"
+
 #define SEM_BUSY "SEM_BUSY"
 
 #define MAX_C 150
@@ -100,7 +105,8 @@ typedef struct comms{
     int fuel;
     int takeoff;
     int tipo; //departure 1, arrival 2
-    int command; //0 descolar, 1 aterrar, 2 hold, 3 desvio
+    int command; // 1 aterrar, 2 hold, 3 desvio, 4 descolar
+    int pista; // 1- A1, 2-A2, 3-D1, 4-D2
     int hold_time;
     int isCompleted; //0 incomplete, 1 complete
     int emergency;
@@ -134,6 +140,11 @@ sem_t *sem_stats;
 sem_t *sem_pistas;
 sem_t *sem_arrival_empty;
 sem_t *sem_arrival_full;
+
+sem_t *pistaa1;
+sem_t *pistaa2;
+sem_t *pistad1;
+sem_t *pistad2;
 
 pthread_mutex_t readpipe = PTHREAD_MUTEX_INITIALIZER;
 
