@@ -359,15 +359,20 @@ void *ManageFuel(void *cabeca){
 //DOES NOT WORK NEEDS TO WORK
 void reinsere(t_queueA *head){
     printf("here\n");
+    srand(time(0)); 
+    int randWait;
     t_queueA *temp_node = head->prox;
     t_queueA *nodeA =head;
     t_message msg = msg;
     head->prox = head->prox->prox;
-    
+    randWait = (rand()%(configs->holdMax - configs->holdMin ))+configs->holdMin;
+    while(nodeA->prox!=NULL){
+        printf("%d\n",rrayshm[nodeA->prox->slot_shm].id);
+    }
     sem_wait(sem_array);
     arrayshm[nodeA->prox->slot_shm].command = 1;
-    arrayshm[nodeA->prox->slot_shm].hold_time = configs->holdMin;
-    arrayshm[nodeA->prox->slot_shm].eta += configs->holdMin;
+    arrayshm[nodeA->prox->slot_shm].hold_time = randWait;
+    arrayshm[nodeA->prox->slot_shm].eta += randWait;
     sem_post(sem_array);
 
     sem_wait(sem_array);
@@ -377,8 +382,9 @@ void reinsere(t_queueA *head){
     sem_post(sem_array);
     temp_node->prox = nodeA->prox;
     nodeA->prox = temp_node;
-    
+
 }
+
 
 int check_arrival(void* cabeca){
 	
