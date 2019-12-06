@@ -193,7 +193,7 @@ void criarMQ(){
 		exit(1);
 
 	}
-    sprintf(message, "Message Queue with ID %d created\n", shmid );
+    sprintf(message, "Message Queue with ID %d created\n", mqid);
     sem_wait(escreve_log);
     escreverEcra(message);
     escreverLog(message);
@@ -263,15 +263,15 @@ void* lerMQ(void* cabeca){
             return 0;   		
     	}  
     	strcpy(str, "");
-    	sprintf(str, "FLIGHT TP%d CONTACTED CONTROL TOWER FOR THE FIRST TIME.\n.", msg.id);
+    	sprintf(str, "FLIGHT TP%d CONTACTED CONTROL TOWER FOR THE FIRST TIME \n", msg.id);
     	sem_wait(escreve_log);
     	escreverEcra(str);
     	escreverLog(str);
     	sem_post(escreve_log);
     	sem_wait(sem_stats);
-    	printf("%d\n", stats->nVoos);
+    	
     	stats->nVoos = stats->nVoos +1;
-    	printf("%d\n",stats->nVoos);
+    	
     	sem_post(sem_stats);
         if(msg.tipo == 1){
         	sem_wait(sem_array);
@@ -320,7 +320,7 @@ void* lerMQ(void* cabeca){
             nodeNovo->prox = nodeA->prox;
             nodeA->prox = nodeNovo;
         }
-    	msg.mtype = msg.id + 2;
+    	msg.mtype = msg.id + 3;
     	msg.slot_shm=i++;
     	msgsnd(mqid, &msg, sizeof(t_message), 0);
         
@@ -419,10 +419,8 @@ int check_departure(void* cabeca){
     
     t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
 
-    
-    
         sem_wait(sem_array);
-        if((cabecaD->prox->prox!=NULL) && (arrayshm[cabecaD->prox->prox->slot_shm].takeoff == arrayshm[cabecaD->prox->slot_shm].takeoff)){
+        if((cabecaD->prox->prox!=NULL) && (arrayshm[cabecaD->prox->prox->slot_shm].takeoff <= arrayshm[cabecaD->prox->slot_shm].takeoff)){
             arrayshm[cabecaD->prox->prox->slot_shm].command = 1;
             arrayshm[cabecaD->prox->slot_shm].command = 1;
             printf("SAIRAM 2 DEPARTURE\n");
@@ -440,27 +438,65 @@ int check_departure(void* cabeca){
     
 }
 
+int conta_departure(void *cabeca){
+    t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
+
+        sem_wait(sem_array);
+        if((cabecaD->prox->prox!=NULL) && (arrayshm[cabecaD->prox->prox->slot_shm].takeoff <= arrayshm[cabecaD->prox->slot_shm].takeoff)){
+            sem_post(sem_array);
+            return 2;
+        }
+        else{
+            
+            sem_post(sem_array);
+            return 1;
+        }
+    
+    return 0;
+
+
+
+}
+
 
 
 void *gere_arrivals(void *cabeca){
     int ncriados;
     int pista = 1;
+    isBusy = 0;
     while(1){
+        t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
+
         sem_wait(sem_arrival_full);
         
-        t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
+        
+        
         if(cabecaA->prox!=NULL){
+            if((arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init > current_time+configs->dDescola)){
+                if(!isBusy){
+                    if(conta_departure(cabeca)==1){
+                        sem_post(sem_arrival_empty);
+                    }
+                    if(conta_departure(cabeca)==2){
+                        sem_post(sem_arrival_empty);
+                        sem_post(sem_arrival_empty);
+                    }
+
+
+                }
+            }
+            
             if(arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init /*completar*/ <= current_time){
                 ncriados = check_arrival(cabeca);
                 switch (ncriados){
         
                     case 1:
-                        printf("caso 1\n");
+                        
                         sem_wait(sem_array);
                         arrayshm[cabecaA->prox->slot_shm].command = 1;
 
-                        sem_post(sem_array);
                         arrayshm[cabecaA->prox->slot_shm].pista = pista;
+                        sem_post(sem_array);
                         if(pista==1){
                             pista = 2;
                         }
@@ -481,6 +517,10 @@ void *gere_arrivals(void *cabeca){
                         arrayshm[cabecaA->prox->prox->slot_shm].command = 1;
                         arrayshm[cabecaA->prox->prox->slot_shm].pista = pista;
                         sem_post(sem_array);
+                        if(pista==1){
+                            pista = 2;
+                        }
+                        else{pista = 1;}
                         cabecaA->prox = cabecaA->prox->prox->prox;
                         break;
                 }
@@ -509,9 +549,8 @@ void *gere_arrivals(void *cabeca){
 void *gere_departures(void *cabeca){
     int ncriados;
     int pista = 3;
-    while(1){
-        sem_wait(sem_arrival_empty);
-        printf("asdsadsads\n");
+    while(1){     
+        
         t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
     
         if(cabecaD->prox!=NULL){
@@ -519,6 +558,7 @@ void *gere_departures(void *cabeca){
                 ncriados = check_departure(cabeca);
                 switch (ncriados){
                     case 1:
+                        
                         sem_wait(sem_array);
                         arrayshm[cabecaD->prox->slot_shm].command = 4;
                         arrayshm[cabecaD->prox->slot_shm].pista = pista;
@@ -528,9 +568,10 @@ void *gere_departures(void *cabeca){
                         else{pista =3;}
                         sem_post(sem_array);
                         cabecaD->prox = cabecaD->prox->prox;
-                    break;
+                        break;
                     
                     case 2:
+                        
                         sem_wait(sem_array);
                         arrayshm[cabecaD->prox->slot_shm].command = 4;
                         arrayshm[cabecaD->prox->slot_shm].pista = pista;
@@ -705,7 +746,7 @@ void *partida(void *node){
     	perror("departure:msgsnd");
     	exit(1);
     }
-    if(msgrcv(mqid, &msg, sizeof(t_message), id+2, 0)==-1){
+    if(msgrcv(mqid, &msg, sizeof(t_message), id+3, 0)==-1){
     	perror("departure:msgrcv");
     	exit(1);
     }
@@ -728,9 +769,13 @@ void *partida(void *node){
         ordem = arrayshm[shm_slot].command;
         sem_post(sem_array);
     }
-        if(arrayshm[shm_slot].pista == 3){
+
+
+    if(arrayshm[shm_slot].pista == 3){
+        sem_wait(sem_arrival_empty);
         sem_wait(sem_pistad1);
         strcpy(str,"");
+
         sprintf(str, "FLIGHT TP%d IS DEPARTING FROM TRACK 0L \n", id);
         sem_wait(escreve_log);
         escreverEcra(str);
@@ -741,6 +786,7 @@ void *partida(void *node){
     }
 
     if(arrayshm[shm_slot].pista == 4){
+        sem_wait(sem_arrival_empty);
         sem_wait(sem_pistad2);
         strcpy(str,"");
         sprintf(str, "FLIGHT TP%d IS DEPARTING FROM TRACK 0R \n", id);
@@ -751,6 +797,7 @@ void *partida(void *node){
         usleep(configs->dDescola * 1000);
         sem_post(sem_pistad2);
     }
+    sem_post(sem_arrival_empty);
 
     pthread_exit(0);
 }
@@ -782,7 +829,7 @@ void *chegada(void *node){
     }
     msgsnd(mqid, &msg, sizeof(t_message), 0);
 
-    msgrcv(mqid, &msg, sizeof(t_message), id+2, 0);
+    msgrcv(mqid, &msg, sizeof(t_message), id+3, 0);
     shm_slot = msg.slot_shm;
 
     strcpy(str,"");
@@ -804,7 +851,6 @@ void *chegada(void *node){
             escreverEcra(str);
             escreverLog(str);
             sem_post(escreve_log);
-
         }
 
         usleep(ut*1000);
@@ -815,6 +861,7 @@ void *chegada(void *node){
     }
     
     if(ordem == 1){
+
         if(arrayshm[shm_slot].pista == 1){
             strcpy(str,"");
             sprintf(str, "FLIGHT TP%d RECEIVED COMMAND TO LAND IN TRACK 28L\n", id);
@@ -831,8 +878,7 @@ void *chegada(void *node){
             escreverEcra(str);
             escreverLog(str);
             sem_post(escreve_log);
-
-            usleep((configs->dAterra)*1000);
+            usleep(ut*(configs->dAterra)*1000);
             strcpy(str,"");
             sprintf(str, "FLIGHT TP%d HAS FINISHED LANDING, FREEING UP TRACK 28L\n", id);
             sem_wait(escreve_log);
@@ -857,8 +903,8 @@ void *chegada(void *node){
             escreverEcra(str);
             escreverLog(str);
             sem_post(escreve_log);
-            printf("Congigs dAterra %d\n", configs->dAterra);
-            usleep((configs->dAterra) *1000);
+            
+            usleep(ut*(configs->dAterra) *1000);
             strcpy(str,"");
             sprintf(str, "FLIGHT TP%d HAS FINISHED LANDING, FREEING UP TRACK 28R\n", id);
             sem_wait(escreve_log);
@@ -1009,6 +1055,7 @@ int main()
     sem_unlink(SEM_D2);
     sem_pistad2 = sem_open(SEM_D2, O_CREAT | O_EXCL, 0700, 1);
     
+
     cabeca_vooA = cria_cabecalhovooA();
     cabeca_vooD = cria_cabecalhovooD();
     //cria log.txt e escreve

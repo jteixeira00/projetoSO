@@ -1,4 +1,2 @@
-DEPARTURE TP0 init: 10 takeoff: 11
-DEPARTURE TP1 init: 10 takeoff: 11
-ARRIVAL TP3 init: 11 eta: 20 fuel: 40
-ARRIVAL TP4 init: 11 eta: 20 fuel: 40
+echo "DEPARTURE TP0 init: 10 takeoff: 11">pipe
+echo "DEPARTURE TP1 init: 10 takeoff: 11">pipe
