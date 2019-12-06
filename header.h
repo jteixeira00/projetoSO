@@ -141,10 +141,12 @@ sem_t *sem_pistas;
 sem_t *sem_arrival_empty;
 sem_t *sem_arrival_full;
 
-sem_t *pistaa1;
-sem_t *pistaa2;
-sem_t *pistad1;
-sem_t *pistad2;
+sem_t *sem_pistaa1;
+sem_t *sem_pistaa2;
+sem_t *sem_pistad1;
+sem_t *sem_pistad2;
+
+
 
 pthread_mutex_t readpipe = PTHREAD_MUTEX_INITIALIZER;
 

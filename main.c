@@ -370,7 +370,7 @@ void reinsere(t_queueA *head){
     head->prox = head->prox->prox;
     randWait = (rand()%(configs->holdMax - configs->holdMin ))+configs->holdMin;
     while(nodeA->prox!=NULL){
-        printf("%d\n",rrayshm[nodeA->prox->slot_shm].id);
+        printf("%d\n",arrayshm[nodeA->prox->slot_shm].id);
     }
     sem_wait(sem_array);
     arrayshm[nodeA->prox->slot_shm].command = 1;
@@ -444,33 +444,52 @@ int check_departure(void* cabeca){
 
 void *gere_arrivals(void *cabeca){
     int ncriados;
+    int pista = 1;
     while(1){
         sem_wait(sem_arrival_full);
+        
         t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
         if(cabecaA->prox!=NULL){
             if(arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init /*completar*/ <= current_time){
                 ncriados = check_arrival(cabeca);
                 switch (ncriados){
-                         
+        
                     case 1:
+                        printf("caso 1\n");
+                        sem_wait(sem_array);
+                        arrayshm[cabecaA->prox->slot_shm].command = 1;
+
+                        sem_post(sem_array);
+                        arrayshm[cabecaA->prox->slot_shm].pista = pista;
+                        if(pista==1){
+                            pista = 2;
+                        }
+                        else{pista = 1;}
                         cabecaA->prox = cabecaA->prox->prox;
 
-                    break;
+                        break;
                     
                     case 2:
+                        
+                        sem_wait(sem_array);
+                        arrayshm[cabecaA->prox->slot_shm].command = 1;
+                        arrayshm[cabecaA->prox->slot_shm].pista = pista;
+                        if(pista==1){
+                            pista = 2;
+                        }
+                        else{pista = 1;}
+                        arrayshm[cabecaA->prox->prox->slot_shm].command = 1;
+                        arrayshm[cabecaA->prox->prox->slot_shm].pista = pista;
+                        sem_post(sem_array);
                         cabecaA->prox = cabecaA->prox->prox->prox;
                         break;
-                        
-
                 }
-                
             }
-           
         }
         if((cabecaA->prox!=NULL)&&(arrayshm[cabecaA->prox->slot_shm].eta  +arrayshm[cabecaA->prox->slot_shm].init <current_time)){
             usleep(ut*1000);
         }
-
+        /*
         if(cabecaA->prox == NULL){
             printf("ARRIVAL EMPTY\n");    
             sem_post(sem_arrival_empty);
@@ -479,33 +498,52 @@ void *gere_arrivals(void *cabeca){
             printf("ARRIVAL FULL\n");
             sem_post(sem_arrival_full);
             usleep(ut*1000);
-        }
-        
+        } 
+        */ 
+        usleep(ut*1000);
+        sem_post(sem_arrival_full);
     }   
 }
 
 
 void *gere_departures(void *cabeca){
     int ncriados;
+    int pista = 3;
     while(1){
         sem_wait(sem_arrival_empty);
+        printf("asdsadsads\n");
         t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
-        printf("FDS\n");
+    
         if(cabecaD->prox!=NULL){
             if(arrayshm[cabecaD->prox->slot_shm].takeoff/*completar*/ <= current_time){
                 ncriados = check_departure(cabeca);
                 switch (ncriados){
                     case 1:
+                        sem_wait(sem_array);
+                        arrayshm[cabecaD->prox->slot_shm].command = 4;
+                        arrayshm[cabecaD->prox->slot_shm].pista = pista;
+                        if(pista==3){
+                            pista = 4;
+                        }
+                        else{pista =3;}
+                        sem_post(sem_array);
                         cabecaD->prox = cabecaD->prox->prox;
                     break;
                     
                     case 2:
+                        sem_wait(sem_array);
+                        arrayshm[cabecaD->prox->slot_shm].command = 4;
+                        arrayshm[cabecaD->prox->slot_shm].pista = pista;
+                        if(pista==3){
+                            pista = 4;
+                        }
+                        else{pista =3;}
+                        arrayshm[cabecaD->prox->prox->slot_shm].command = 4;
+                        arrayshm[cabecaD->prox->prox->slot_shm].pista = pista;
+                        sem_post(sem_array);
                         cabecaD->prox = cabecaD->prox->prox->prox;
                         break;
-                        
-
                 }
-                
             }
            
         }
@@ -513,18 +551,6 @@ void *gere_departures(void *cabeca){
         usleep(ut*1000);
     }
 }
-
-/*void *gere_busy(void *cabeca){
-    t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
-    t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
-    while(1){
-        sem_wait(sem_busy);
-        switch (last_flight):
-            case 1:
-                if()
-
-    }
-}*/
 
 void torreControlo(){
 	sem_wait(escreve_log);
@@ -591,9 +617,7 @@ void lerPipe(){
             k++;
             memset(aux, 0, sizeof(aux));
             read(fdpipe, aux, 1);
-
         }
-
 		comando[100]='\0';
     	if(comando[0] =='D'){
     		verifier = verificaD(comando);
@@ -628,7 +652,6 @@ void lerPipe(){
             }
     		strcpy(str, "");
     	}
-
         printf("FUTURE ARRIVALS TO BE CREATED: \n");
         nodeA=cabeca_vooA->prox;
         nodeD = cabeca_vooD->prox;
@@ -638,7 +661,6 @@ void lerPipe(){
         }
         printf("\n");
         printf("FUTURE DEPARTURES TO BE CREATED: \n");
-        
         while(nodeD!= NULL){
             printf("%s ",nodeD->nome);
             nodeD = nodeD->prox;
@@ -695,6 +717,41 @@ void *partida(void *node){
     escreverEcra(str);
     escreverLog(str);
     sem_post(escreve_log);
+
+    usleep((((t_vooD*)node)->takeoff - current_time-1)*1000);
+
+    sem_wait(sem_array);
+    int ordem = arrayshm[shm_slot].command;
+    sem_post(sem_array);
+    while(ordem!=4){
+        sem_wait(sem_array);
+        ordem = arrayshm[shm_slot].command;
+        sem_post(sem_array);
+    }
+        if(arrayshm[shm_slot].pista == 3){
+        sem_wait(sem_pistad1);
+        strcpy(str,"");
+        sprintf(str, "FLIGHT TP%d IS DEPARTING FROM TRACK 0L \n", id);
+        sem_wait(escreve_log);
+        escreverEcra(str);
+        escreverLog(str);
+        sem_post(escreve_log);
+        usleep(configs->dDescola * 1000);
+        sem_post(sem_pistad1);
+    }
+
+    if(arrayshm[shm_slot].pista == 4){
+        sem_wait(sem_pistad2);
+        strcpy(str,"");
+        sprintf(str, "FLIGHT TP%d IS DEPARTING FROM TRACK 0R \n", id);
+        sem_wait(escreve_log);
+        escreverEcra(str);
+        escreverLog(str);
+        sem_post(escreve_log);
+        usleep(configs->dDescola * 1000);
+        sem_post(sem_pistad2);
+    }
+
     pthread_exit(0);
 }
 
@@ -734,45 +791,33 @@ void *chegada(void *node){
     escreverEcra(str);
     escreverLog(str);
     sem_post(escreve_log);
-    
-    /*while(1){
-    	sem_wait(sem_array);
-    	if(arrayshm[shm_slot].isCompleted){
-    		strcpy(str,"");
-		    sprintf(str,"FLIGHT TP%d HAS BEEN CONCLUDED\n", msg.id);
-		    sem_wait(escreve_log);
-		    escreverEcra(str);
-		    escreverLog(str);
-		    sem_post(escreve_log);
-    		break;
-    	}
-    	sem_post(sem_array);
-    	usleep(ut*1000);
-    }*/
     sem_wait(sem_array);
     int ordem = arrayshm[shm_slot].command;
     sem_post(sem_array);
     while((ordem != 1) && (ordem!=3)){
+        
         if(ordem == 2){
 
             strcpy(str,"");
-            sprintf(str, "FLIGHT TP%d RECEIVED COMMAND TO HOLD FOR %d TIME UNITS", id, );
+            sprintf(str, "FLIGHT TP%d RECEIVED COMMAND TO HOLD FOR %d TIME UNITS\n", id, arrayshm[shm_slot].hold_time);
             sem_wait(escreve_log);
             escreverEcra(str);
             escreverLog(str);
             sem_post(escreve_log);
+
         }
 
-        usleep(ut*1000)
+        usleep(ut*1000);
         sem_wait(sem_array);
-        int ordem = arrayshm[shm_slot].command;
+        ordem = arrayshm[shm_slot].command;
+        
         sem_post(sem_array);
     }
     
     if(ordem == 1){
         if(arrayshm[shm_slot].pista == 1){
             strcpy(str,"");
-            sprintf(str, "FLIGHT TP%d RECEIVED COMMAND TO LAND IN TRACK 28L", id);
+            sprintf(str, "FLIGHT TP%d RECEIVED COMMAND TO LAND IN TRACK 28L\n", id);
             sem_wait(escreve_log);
             escreverEcra(str);
             escreverLog(str);
@@ -781,15 +826,15 @@ void *chegada(void *node){
             sem_wait(sem_pistaa1);
 
             strcpy(str,"");
-            sprintf(str, "FLIGHT TP%d WILL START LANDING IN TRACK 28L", id);
+            sprintf(str, "FLIGHT TP%d WILL START LANDING IN TRACK 28L\n", id);
             sem_wait(escreve_log);
             escreverEcra(str);
             escreverLog(str);
             sem_post(escreve_log);
 
-            usleep(config->dAterra *1000);
+            usleep((configs->dAterra)*1000);
             strcpy(str,"");
-            sprintf(str, "FLIGHT TP%d HAS FINISHED LANDING, FREEING UP TRACK 28L", id);
+            sprintf(str, "FLIGHT TP%d HAS FINISHED LANDING, FREEING UP TRACK 28L\n", id);
             sem_wait(escreve_log);
             escreverEcra(str);
             escreverLog(str);
@@ -798,43 +843,42 @@ void *chegada(void *node){
         }
         if(arrayshm[shm_slot].pista == 2){
             strcpy(str,"");
-            sprintf(str, "FLIGHT TP%d RECEIVED COMMAND TO LAND IN TRACK 28R", id);
+            sprintf(str, "FLIGHT TP%d RECEIVED COMMAND TO LAND IN TRACK 28R\n", id);
             sem_wait(escreve_log);
             escreverEcra(str);
             escreverLog(str);
             sem_post(escreve_log);
 
-            sem_wait(sem_pistaa1);
+            sem_wait(sem_pistaa2);
 
             strcpy(str,"");
-            sprintf(str, "FLIGHT TP%d WILL START LANDING IN TRACK 28R", id);
+            sprintf(str, "FLIGHT TP%d WILL START LANDING IN TRACK 28R\n", id);
             sem_wait(escreve_log);
             escreverEcra(str);
             escreverLog(str);
             sem_post(escreve_log);
-            usleep(config->dAterra *1000);
+            printf("Congigs dAterra %d\n", configs->dAterra);
+            usleep((configs->dAterra) *1000);
             strcpy(str,"");
-            sprintf(str, "FLIGHT TP%d HAS FINISHED LANDING, FREEING UP TRACK 28R", id);
+            sprintf(str, "FLIGHT TP%d HAS FINISHED LANDING, FREEING UP TRACK 28R\n", id);
             sem_wait(escreve_log);
             escreverEcra(str);
             escreverLog(str);
             sem_post(escreve_log);
-            sem_post(sem_pistaa1);
+            sem_post(sem_pistaa2);
         }
-    if(ordem == 3){
-
-
-        
-
-
     }
-
-
-    
+    if(ordem == 3){
+        strcpy(str,"");
+            sprintf(str, "FLIGHT TP%d DIVERTED TO CLOSEST AIRPORT\n", id);
+            sem_wait(escreve_log);
+            escreverEcra(str);
+            escreverLog(str);
+            sem_post(escreve_log);
+    } 
     pthread_exit(0);
+    
 }
-
-
 
 
 void *criavoos(){
@@ -861,7 +905,6 @@ void *criavoos(){
 }
 
 
-
 void acabar(){
 	
     msgctl(mqid,IPC_RMID,NULL);
@@ -881,8 +924,8 @@ void acabar(){
     escreverEcra("Named Pipe closed successfully\n\n");
     escreverLog("Named Pipe closed successfully\n");
     sem_post(escreve_log);
-    sem_unlink(SEM_ARR);
-    sem_close(sem_array);
+    //sem_unlink(SEM_ARR);
+    //sem_close(sem_array);
     sem_unlink(SEM_ARRIVAL_EMPTY);
     sem_close(sem_arrival_empty);
     sem_unlink(SEM_STATS);
@@ -953,20 +996,18 @@ int main()
     sem_array = sem_open(SEM_ARR, O_CREAT | O_EXCL, 0700, 1);
     sem_unlink(SEM_STATS);
     sem_stats = sem_open(SEM_STATS, O_CREAT | O_EXCL, 0700, 1);
-    //sem_unlink(SEM_BUSY);
-    //sem_busy = sem_open(SEM_BUSY, O_CREAT | O_EXCL, 0700, 1);
     sem_unlink(SEM_ARRIVAL_EMPTY);
     sem_arrival_empty = sem_open(SEM_ARRIVAL_EMPTY, O_CREAT | O_EXCL, 0700,0);
     sem_unlink(SEM_ARRIVAL_FULL);
     sem_arrival_full = sem_open(SEM_ARRIVAL_FULL, O_CREAT | O_EXCL, 0700,1);
     sem_unlink(SEM_A1);
-    sem_pistaa1 = sem_open(SEM_A1, O_CREAT | O_EXCL, 0700. 1);
+    sem_pistaa1 = sem_open(SEM_A1, O_CREAT | O_EXCL, 0700, 1);
     sem_unlink(SEM_A2);
-    sem_pistaa2 = sem_open(SEM_A2, O_CREAT | O_EXCL, 0700. 1);
+    sem_pistaa2 = sem_open(SEM_A2, O_CREAT | O_EXCL, 0700, 1);
     sem_unlink(SEM_D1);
-    sem_pistad1 = sem_open(SEM_D1, O_CREAT | O_EXCL, 0700. 1);
+    sem_pistad1 = sem_open(SEM_D1, O_CREAT | O_EXCL, 0700, 1);
     sem_unlink(SEM_D2);
-    sem_pistad2 = sem_open(SEM_D2, O_CREAT | O_EXCL, 0700. 1);
+    sem_pistad2 = sem_open(SEM_D2, O_CREAT | O_EXCL, 0700, 1);
     
     cabeca_vooA = cria_cabecalhovooA();
     cabeca_vooD = cria_cabecalhovooD();
@@ -980,7 +1021,7 @@ int main()
     inicializa_stats();
     criarMQ();
     criarPipe();
-   
+    
     
     if(fork()==0){
     	if(pthread_create(&thread_tempoTC, NULL, tempo, NULL)!=0){
