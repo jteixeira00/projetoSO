@@ -467,7 +467,9 @@ void *gere_arrivals(void *cabeca){
     int ncriados;
     int pista = 1;
     isBusy = 0;
+    time_departure = current_time;
     while(1){
+    	
         t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
 
         sem_wait(sem_arrival_full);
@@ -493,6 +495,7 @@ void *gere_arrivals(void *cabeca){
             
             if(arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init /*completar*/ <= current_time){
                 ncriados = check_arrival(cabeca);
+                time_departure = current_time;
                 switch (ncriados){
         
                     case 1:
@@ -535,17 +538,17 @@ void *gere_arrivals(void *cabeca){
         if((cabecaA->prox!=NULL)&&(arrayshm[cabecaA->prox->slot_shm].eta +arrayshm[cabecaA->prox->slot_shm].init <current_time)){
             usleep(ut*1000);
         }
-        /*
-        if(cabecaA->prox == NULL){
-            printf("ARRIVAL EMPTY\n");    
+        */
+        if((cabecaA->prox == NULL)||(current_time-time_departure >= 10)){
+              
             sem_post(sem_arrival_empty);
         }
         else{
-            printf("ARRIVAL FULL\n");
+           
             sem_post(sem_arrival_full);
-            usleep(ut*1000);
+            
         } 
-        */ 
+        
         usleep(ut*1000);
         sem_post(sem_arrival_full);
     }   
@@ -555,8 +558,10 @@ void *gere_arrivals(void *cabeca){
 void *gere_departures(void *cabeca){
     int ncriados;
     int pista = 3;
+    time_departure = current_time;
     while(1){     
         
+        sem_wait(sem_arrival_empty);
         t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
         
         

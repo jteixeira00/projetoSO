@@ -1,2 +1,6 @@
-echo "DEPARTURE TP0 init: 10 takeoff: 11">pipe
-echo "DEPARTURE TP1 init: 10 takeoff: 11">pipe
+ARRIVAL TP0 init: 10 eta: 10 fuel: 30
+ARRIVAL TP1 init: 10 eta: 10 fuel: 30
+ARRIVAL TP2 init: 10 eta: 30 fuel: 30
+DEPARTURE TP3 init: 10 takeoff: 20
+DEPARTURE TP4 init: 10 takeoff: 20
+

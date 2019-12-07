@@ -163,6 +163,7 @@ pthread_t voosChegada[1000], voosPartida[1000];
 FILE *fp;
 int ut;
 int current_time = 0;
+int time_departure;
 int shmid2;
 int shmid;
 int mqid;
