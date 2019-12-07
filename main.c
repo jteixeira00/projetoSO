@@ -399,13 +399,13 @@ int check_arrival(void* cabeca){
         if((cabecaA->prox->prox!=NULL) && (arrayshm[cabecaA->prox->prox->slot_shm].eta == arrayshm[cabecaA->prox->slot_shm].eta)){
             arrayshm[cabecaA->prox->prox->slot_shm].command = 1;
             arrayshm[cabecaA->prox->slot_shm].command = 1;
-            printf("ATERRARAM 2 ARRIVAL\n");
+            
             sem_post(sem_array);
             return 2;
         }
         else{
             arrayshm[cabecaA->prox->slot_shm].command = 1;
-            printf("ATERROU 1 ARRIVAL\n");
+            
             sem_post(sem_array);
             return 1;
         }
@@ -442,16 +442,19 @@ int conta_departure(void *cabeca){
     t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
 
         sem_wait(sem_array);
+        printf("tou aqui mas foda-se\n");
         if((cabecaD->prox->prox!=NULL) && (arrayshm[cabecaD->prox->prox->slot_shm].takeoff <= arrayshm[cabecaD->prox->slot_shm].takeoff)){
             sem_post(sem_array);
+            printf("RETURN 2\n" );
             return 2;
         }
         else{
-            
+    
             sem_post(sem_array);
+            printf("RETURN 1\n");
             return 1;
         }
-    
+    printf("RETURN 0\n");
     return 0;
 
 
@@ -468,23 +471,25 @@ void *gere_arrivals(void *cabeca){
         t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
 
         sem_wait(sem_arrival_full);
-        
-        
-        
+
         if(cabecaA->prox!=NULL){
+            /*
             if((arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init > current_time+configs->dDescola)){
+               
                 if(!isBusy){
+                     printf("E AQUI? NAO?\n");
                     if(conta_departure(cabeca)==1){
+                        printf("bela merda\n");
                         sem_post(sem_arrival_empty);
                     }
                     if(conta_departure(cabeca)==2){
+                        printf(":OOOOOOO\n");
                         sem_post(sem_arrival_empty);
                         sem_post(sem_arrival_empty);
                     }
-
-
                 }
             }
+            */
             
             if(arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init /*completar*/ <= current_time){
                 ncriados = check_arrival(cabeca);
@@ -526,7 +531,8 @@ void *gere_arrivals(void *cabeca){
                 }
             }
         }
-        if((cabecaA->prox!=NULL)&&(arrayshm[cabecaA->prox->slot_shm].eta  +arrayshm[cabecaA->prox->slot_shm].init <current_time)){
+        /*
+        if((cabecaA->prox!=NULL)&&(arrayshm[cabecaA->prox->slot_shm].eta +arrayshm[cabecaA->prox->slot_shm].init <current_time)){
             usleep(ut*1000);
         }
         /*
@@ -552,6 +558,9 @@ void *gere_departures(void *cabeca){
     while(1){     
         
         t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
+        
+        
+        
     
         if(cabecaD->prox!=NULL){
             if(arrayshm[cabecaD->prox->slot_shm].takeoff/*completar*/ <= current_time){
@@ -568,6 +577,7 @@ void *gere_departures(void *cabeca){
                         else{pista =3;}
                         sem_post(sem_array);
                         cabecaD->prox = cabecaD->prox->prox;
+                        
                         break;
                     
                     case 2:
@@ -583,8 +593,10 @@ void *gere_departures(void *cabeca){
                         arrayshm[cabecaD->prox->prox->slot_shm].pista = pista;
                         sem_post(sem_array);
                         cabecaD->prox = cabecaD->prox->prox->prox;
+                        
                         break;
                 }
+                
             }
            
         }
@@ -759,20 +771,25 @@ void *partida(void *node){
     escreverLog(str);
     sem_post(escreve_log);
 
-    usleep((((t_vooD*)node)->takeoff - current_time-1)*1000);
+    usleep((((t_vooD*)node)->takeoff - current_time-1)*ut*1000);
 
     sem_wait(sem_array);
     int ordem = arrayshm[shm_slot].command;
     sem_post(sem_array);
     while(ordem!=4){
+        printf("TOU AQUI CARALHO\n");
         sem_wait(sem_array);
         ordem = arrayshm[shm_slot].command;
+        printf("%d\n", ordem);
         sem_post(sem_array);
+        usleep(ut*1000);
     }
 
 
     if(arrayshm[shm_slot].pista == 3){
+        printf("cheguei aqui1\n");
         sem_wait(sem_arrival_empty);
+        printf("mas nao aqui\n");
         sem_wait(sem_pistad1);
         strcpy(str,"");
 
@@ -786,7 +803,9 @@ void *partida(void *node){
     }
 
     if(arrayshm[shm_slot].pista == 4){
+        printf("cheguei aqui1\n");
         sem_wait(sem_arrival_empty);
+        printf("mas nao aqui\n");
         sem_wait(sem_pistad2);
         strcpy(str,"");
         sprintf(str, "FLIGHT TP%d IS DEPARTING FROM TRACK 0R \n", id);
