@@ -298,7 +298,7 @@ void* lerMQ(void* cabeca){
             }
         }
         if(msg.tipo == 2){
-<<<<<<< HEAD
+
             stats->nAterragens +=1;
             if(stats->nAterragens>configs->maxchega){
                 msg.mtype = msg.id+3;
@@ -338,35 +338,7 @@ void* lerMQ(void* cabeca){
                 msg.mtype = msg.id + 3;
                 msg.slot_shm=i++;
             }
-=======
-        	sem_wait(sem_array);
-            arrayshm[i].init = msg.init;
-            arrayshm[i].id = msg.id;
-            arrayshm[i].eta = msg.eta;
-            arrayshm[i].fuel = msg.fuel;
-            arrayshm[i].tipo = msg.tipo;
-            arrayshm[i].isCompleted=0;
-            arrayshm[i].emergency = msg.emergency;
-            t_queueA *nodeA = cabecalho->A;
-            t_queueA *nodeNovo = (t_queueA*)malloc(sizeof(t_queueA));
-            if(arrayshm[i].emergency == 0){
-	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)){
-	                nodeA = nodeA->prox;
-	            }
-	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta==msg.eta)&&(arrayshm[nodeA->prox->slot_shm].emergency==1)){
-	                nodeA = nodeA->prox;
-	            }
-	        }
-	        else{
-	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)){
-	                nodeA = nodeA->prox;
-	            }
-	        }
-            sem_post(sem_array);
-            nodeNovo->slot_shm = i;
-            nodeNovo->prox = nodeA->prox;
-            nodeA->prox = nodeNovo;
->>>>>>> 793d5da2301180c7c2f4a1fb6c422b88475a6206
+
         }
     	
     	msgsnd(mqid, &msg, sizeof(t_message), 0);
@@ -474,8 +446,8 @@ int check_departure(void* cabeca){
     
 }
 
-<<<<<<< HEAD
-=======
+
+
 int conta_departure(void *cabeca){
     t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
 
@@ -494,7 +466,7 @@ int conta_departure(void *cabeca){
     printf("RETURN 0\n");
     return 0;
 }
->>>>>>> 793d5da2301180c7c2f4a1fb6c422b88475a6206
+
 
 
 
@@ -1093,9 +1065,6 @@ void acabar(){
     exit(0);
 }
 
-<<<<<<< HEAD
-
-=======
 void printstats(){
     printf("------------------------------\n");
     printf("\t STATS\n");
@@ -1110,7 +1079,6 @@ void printstats(){
     printf("NUMBER OF REJECTED FLIGHTS\n", stats->rejeitados);
     printf("NUMBER OF URGENT FLIGHTS\n", stats->nUrgentes);
 }
->>>>>>> 793d5da2301180c7c2f4a1fb6c422b88475a6206
 
 
 void acabarTC(){
