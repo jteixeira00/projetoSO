@@ -131,7 +131,9 @@ typedef struct stats{
     int nmedioHoldings_urgentes;
     int nRedirecionados;
     int rejeitados;
+    int nUrgentes;
 }t_stats;
+
 t_comms *arrayshm;
 t_config *configs;
 t_stats *stats;

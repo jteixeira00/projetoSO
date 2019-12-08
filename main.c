@@ -499,7 +499,11 @@ void *gere_arrivals(void *cabeca){
                             count++;
                             if(count>3){
                                 reinsere(cabecaA);
+
+                                stats->nmedioHoldings+=1;
+
                                 
+
                             }
                             else{
                             cabecaA = cabecaA->prox;
@@ -716,9 +720,7 @@ void *partida(void *node){
     escreverEcra(str);
     escreverLog(str);
     sem_post(escreve_log); 
- 
-
-
+    
     t_message msg;
     msg.init = ((t_vooD*)node)->init;
     msg.mtype = 2;
@@ -763,6 +765,8 @@ void *partida(void *node){
         strcpy(str,"");
 
         sprintf(str, "FLIGHT TP%d IS DEPARTING FROM TRACK 0L \n", id);
+        stats->tempomedioDescolar += (current_time-arrayshm[shm_slot].takeoff);
+        stats->nDescolagens+=1;
         sem_wait(escreve_log);
         escreverEcra(str);
         escreverLog(str);
@@ -776,6 +780,8 @@ void *partida(void *node){
         sem_wait(sem_pistad2);
         strcpy(str,"");
         sprintf(str, "FLIGHT TP%d IS DEPARTING FROM TRACK 0R \n", id);
+        stats->tempomedioDescolar += (current_time-arrayshm[shm_slot].takeoff);
+        stats->nDescolagens+=1;
         sem_wait(escreve_log);
         escreverEcra(str);
         escreverLog(str);
@@ -827,6 +833,8 @@ void *chegada(void *node){
     sem_wait(sem_array);
     int ordem = arrayshm[shm_slot].command;
     sem_post(sem_array);
+    int start_time;
+
     while((ordem != 1) && (ordem!=3)){
         
         if(ordem == 2){
@@ -851,6 +859,7 @@ void *chegada(void *node){
         if(arrayshm[shm_slot].pista == 1){
             strcpy(str,"");
             sprintf(str, "FLIGHT TP%d RECEIVED COMMAND TO LAND IN TRACK 28L\n", id);
+            start_time = current_time;
             sem_wait(escreve_log);
             escreverEcra(str);
             escreverLog(str);
@@ -867,6 +876,8 @@ void *chegada(void *node){
             usleep(ut*(configs->dAterra)*1000);
             strcpy(str,"");
             sprintf(str, "FLIGHT TP%d HAS FINISHED LANDING, FREEING UP TRACK 28L\n", id);
+            stats->nAterragens +=1;
+            stats->tempomedioAterrar += (current_time-start_time);
             sem_wait(escreve_log);
             escreverEcra(str);
             escreverLog(str);
@@ -876,6 +887,7 @@ void *chegada(void *node){
         if(arrayshm[shm_slot].pista == 2){
             strcpy(str,"");
             sprintf(str, "FLIGHT TP%d RECEIVED COMMAND TO LAND IN TRACK 28R\n", id);
+            start_time = current_time;
             sem_wait(escreve_log);
             escreverEcra(str);
             escreverLog(str);
@@ -893,6 +905,9 @@ void *chegada(void *node){
             usleep(ut*(configs->dAterra) *1000);
             strcpy(str,"");
             sprintf(str, "FLIGHT TP%d HAS FINISHED LANDING, FREEING UP TRACK 28R\n", id);
+            stats->tempomedioAterrar += (current_time-start_time);
+            stats->nAterragens +=1;
+
             sem_wait(escreve_log);
             escreverEcra(str);
             escreverLog(str);
@@ -984,9 +999,14 @@ void printstats(){
     printf("\t STATS\n");
     printf("NUMBER OF FLIGHTS: %d\n", stats->nVoos);
     printf("NUMBER OF ARRIVALS: %d\n", stats->nAterragens);
-    printf("AVERAGE LANDING TIME %d\n", stats->tempomedioAterrar);
+    printf("AVERAGE LANDING TIME %d\n", (stats->tempomedioAterrar)/nAterragens);
     printf("NUMBER OF DEPARTURES: %d\n", stats->nDescolagens);
-
+    printf("AVERAGE DEPARTURE TIME: %d\n", (stats->tempomedioDescolar/nDescolagens));
+    printf("AVERAGE HOLDING NUMBER: %d\n", (stats->nmedioHoldings)/nAterragens);
+    printf("AVERAGE URGENT HOLDING NUMBER:\n", (stats->nmedioHoldings_urgentes)/nUrgentes);
+    printf("NUMBER OF REDIRECTED FLIGHTS: \n", stats->nRedirecionados);
+    printf("NUMBER OF REJECTED FLIGHTS\n", stats->rejeitados);
+    printf("NUMBER OF URGENT FLIGHTS\n", stats->nUrgentes);
 }
 
 
