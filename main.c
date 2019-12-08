@@ -364,11 +364,6 @@ void reinsere(t_queueA *node){
     t_queueA *novoNode = malloc(sizeof(t_queueA));
     t_queueA *aux = node;
     t_queueA *final;
-    while(aux!=NULL){
-        printf("ID: %d\n", arrayshm[aux->slot_shm].id );
-        aux = aux->prox;
-    }
-    printf("\n\n\n");
     aux = node;
     novoNode->slot_shm = node->prox->slot_shm;
     while((aux->prox!=NULL)&&(arrayshm[aux->prox->slot_shm].eta<eta)){
@@ -386,12 +381,6 @@ void reinsere(t_queueA *node){
     free(node->prox);
     node->prox = final;
     arrayshm[novoNode->slot_shm].eta = eta;
-    aux = node;
-    while(aux!=NULL){
-        printf("ID: %d\n", arrayshm[aux->slot_shm].id );
-        aux = aux->prox;
-    }
-    printf("\n\n\n\n\n\n");
 }
 
 
@@ -470,7 +459,14 @@ void *gere_arrivals(void *cabeca){
     while(1){
     	
         t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
-        t_queueA *tempnode;
+       /* t_queueA *tempnode = ((t_cabecasqueue*)cabeca)->A;
+        while(tempnode->prox!=NULL){
+        	printf("ID:%d ETA: %d\n",arrayshm[tempnode->prox->slot_shm].id,arrayshm[tempnode->prox->slot_shm].eta);
+        	tempnode = tempnode->prox;
+        }
+        printf("----------------\n");
+        printf("----------------\n");
+        printf("----------------\n");*/
 
         sem_wait(sem_arrival_full);
 
@@ -519,12 +515,20 @@ void *gere_arrivals(void *cabeca){
                         int temp_time = current_time;
                         while((cabecaA->prox != NULL) &&(arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init <= temp_time)){
                             count++;
-                            printf("count %d\n", count);
+                            //printf("COUNT: %d\n",count);
                             if(count>3){
+                            //	printf("ID:%d ETA: %d\n",arrayshm[cabecaA->prox->slot_shm].id,arrayshm[cabecaA->prox->slot_shm].eta);
                                 reinsere(cabecaA);
+
                                 stats->nmedioHoldings+=1;
+
+                                
+
                             }
+                            else{
+                            //printf("ID:%d ETA: %d\n",arrayshm[cabecaA->prox->slot_shm].id,arrayshm[cabecaA->prox->slot_shm].eta);
                             cabecaA = cabecaA->prox;
+                        }
                         }
                         sem_post(sem_broadcast);
                         break;
