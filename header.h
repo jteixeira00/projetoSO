@@ -38,6 +38,7 @@ struct timeb t_inicio;
 #define SEM_A2 "SEM_A2"
 #define SEM_D1 "SEM_D1"
 #define SEM_D2 "SEM_D2"
+#define SEM_LISTA "SEM_LISTA"
 
 #define SEM_BUSY "SEM_BUSY"
 
@@ -146,7 +147,8 @@ sem_t *sem_pistaa2;
 sem_t *sem_pistad1;
 sem_t *sem_pistad2;
 
-
+sem_t *sem_lista;
+sigset_t sigs;
 
 pthread_mutex_t readpipe = PTHREAD_MUTEX_INITIALIZER;
 
