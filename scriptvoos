@@ -1,4 +1,5 @@
 ARRIVAL TP0 init: 10 eta: 10 fuel: 300
+<<<<<<< HEAD
 ARRIVAL TP1 init: 10 eta: 10 fuel: 300
 ARRIVAL TP2 init: 10 eta: 10 fuel: 300
 ARRIVAL TP3 init: 10 eta: 10 fuel: 300
@@ -18,3 +19,11 @@ DEPARTURE TP16 init: 10 takeoff: 20
 DEPARTURE TP17 init: 10 takeoff: 20
 DEPARTURE TP18 init: 10 takeoff: 20
 DEPARTURE TP19 init: 10 takeoff: 20
+=======
+ARRIVAL TP1 init: 10 eta: 12 fuel: 300
+ARRIVAL TP2 init: 10 eta: 12 fuel: 36
+ARRIVAL TP3 init: 10 eta: 12 fuel: 36
+ARRIVAL TP4 init: 10 eta: 12 fuel: 300
+ARRIVAL TP5 init: 10 eta: 13 fuel: 300
+
+>>>>>>> 793d5da2301180c7c2f4a1fb6c422b88475a6206
