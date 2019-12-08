@@ -363,10 +363,22 @@ void reinsere(t_queueA *node){
 
     t_queueA *novoNode = malloc(sizeof(t_queueA));
     t_queueA *aux = node;
-    t_queueA *final = node->prox->prox;
+    t_queueA *final;
+    while(aux!=NULL){
+        printf("ID: %d\n", arrayshm[aux->slot_shm].id );
+        aux = aux->prox;
+    }
+    printf("\n\n\n");
+    aux = node;
     novoNode->slot_shm = node->prox->slot_shm;
     while((aux->prox!=NULL)&&(arrayshm[aux->prox->slot_shm].eta<eta)){
         aux = aux->prox;
+    }
+    if(node->prox->prox == NULL){
+        final = novoNode; 
+    }
+    else{
+        final = node->prox->prox;
     }
     novoNode->prox = aux->prox;
     aux->prox = novoNode;
@@ -374,7 +386,12 @@ void reinsere(t_queueA *node){
     free(node->prox);
     node->prox = final;
     arrayshm[novoNode->slot_shm].eta = eta;
- 
+    aux = node;
+    while(aux!=NULL){
+        printf("ID: %d\n", arrayshm[aux->slot_shm].id );
+        aux = aux->prox;
+    }
+    printf("\n\n\n\n\n\n");
 }
 
 
@@ -453,6 +470,7 @@ void *gere_arrivals(void *cabeca){
     while(1){
     	
         t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
+        t_queueA *tempnode;
 
         sem_wait(sem_arrival_full);
 
@@ -495,18 +513,19 @@ void *gere_arrivals(void *cabeca){
                             pista = 2;
                         }
                         else{pista = 1;}
-                        sem_post(sem_broadcast);
+                        
                         cabecaA->prox = cabecaA->prox->prox->prox;
                         int count = 0;
                         int temp_time = current_time;
-                        while((cabecaA->prox != NULL) && (arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init <= temp_time)){
+                        while((cabecaA->prox != NULL) &&(arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init <= temp_time)){
                             count++;
-                            printf("ID: %d count %d\n",arrayshm[cabecaA->prox->slot_shm].id, count );
+                            printf("count %d\n", count);
                             if(count>3){
                                 reinsere(cabecaA);
                             }
                             cabecaA = cabecaA->prox;
                         }
+                        sem_post(sem_broadcast);
                         break;
                 }
             }
@@ -986,6 +1005,27 @@ void acabar(){
     exit(0);
 }
 
+void printstats(){
+    printf("------------------------------\n");
+    printf("\t STATS\n");
+    printf("NUMBER OF FLIGHTS: %d\n", stats->nVoos);
+    printf("NUMBER OF ARRIVALS: %d\n", stats->nAterragens);
+    printf("AVERAGE LANDING TIME %d\n", stats->tempomedioAterrar);
+    printf("NUMBER OF DEPARTURES: %d\n", stats->nDescolagens);
+
+    /*
+    int nVoos;
+    int nAterragens;
+    int tempomedioAterrar;
+    int nDescolagens;
+    int tempomedioDescolar;
+    int nmedioHoldings;
+    int nmedioHoldings_urgentes;
+    int nRedirecionados;
+    int rejeitados;
+    */
+
+}
 
 
 void acabarTC(){
