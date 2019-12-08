@@ -13,3 +13,4 @@ ARRIVAL TP11 init: 10 eta: 10 fuel: 300
 ARRIVAL TP12 init: 10 eta: 10 fuel: 300
 ARRIVAL TP13 init: 10 eta: 10 fuel: 300
 ARRIVAL TP14 init: 10 eta: 10 fuel: 300
+DEPARTURE TP15 init: 10 takeoff: 20

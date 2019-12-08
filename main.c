@@ -3,7 +3,7 @@
 
 
 /*
-atualizar escrever log | atualizar escrever stats | escrver stats CRL C | Fazer o Relatório  | corrigir while 1 da TC
+prioridad | atualizar escrever log | atualizar escrever stats | escrver stats CRL C | Fazer o Relatório  | corrigir while 1 da TC
 
 */
 
@@ -383,14 +383,14 @@ int check_arrival(void* cabeca){
     t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
         sem_wait(sem_array);
         if((cabecaA->prox->prox!=NULL) && (arrayshm[cabecaA->prox->prox->slot_shm].eta == arrayshm[cabecaA->prox->slot_shm].eta)){
-            arrayshm[cabecaA->prox->prox->slot_shm].command = 1;
-            arrayshm[cabecaA->prox->slot_shm].command = 1;
+            //arrayshm[cabecaA->prox->prox->slot_shm].command = 1;
+            //arrayshm[cabecaA->prox->slot_shm].command = 1;
             
             sem_post(sem_array);
             return 2;
         }
         else{
-            arrayshm[cabecaA->prox->slot_shm].command = 1;
+            //arrayshm[cabecaA->prox->slot_shm].command = 1;
             
             sem_post(sem_array);
             return 1;
@@ -407,14 +407,14 @@ int check_departure(void* cabeca){
 
         sem_wait(sem_array);
         if((cabecaD->prox->prox!=NULL) && (arrayshm[cabecaD->prox->prox->slot_shm].takeoff <= arrayshm[cabecaD->prox->slot_shm].takeoff)){
-            arrayshm[cabecaD->prox->prox->slot_shm].command = 1;
-            arrayshm[cabecaD->prox->slot_shm].command = 1;
+           // arrayshm[cabecaD->prox->prox->slot_shm].command = 1;
+           // arrayshm[cabecaD->prox->slot_shm].command = 1;
 
             sem_post(sem_array);
             return 2;
         }
         else{
-            arrayshm[cabecaD->prox->slot_shm].command = 1;
+            //arrayshm[cabecaD->prox->slot_shm].command = 1;
             sem_post(sem_array);
             return 1;
         }
@@ -441,9 +441,6 @@ int conta_departure(void *cabeca){
         }
     printf("RETURN 0\n");
     return 0;
-
-
-
 }
 
 
@@ -459,10 +456,11 @@ void *gere_arrivals(void *cabeca){
 
         sem_wait(sem_arrival_full);
 
-        if(cabecaA->prox!=NULL){            
+        if(cabecaA->prox!=NULL){    
+            time_departure = arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init;
             if(arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init /*completar*/ <= current_time){
                 ncriados = check_arrival(cabeca);
-                time_departure = current_time;
+                //time_departure = current_time;
                 switch (ncriados){
         
                     case 1:
@@ -476,6 +474,7 @@ void *gere_arrivals(void *cabeca){
                             pista = 2;
                         }
                         else{pista = 1;}
+                        sem_post(sem_broadcast);
                         cabecaA->prox = cabecaA->prox->prox;
 
                         break;
@@ -496,12 +495,14 @@ void *gere_arrivals(void *cabeca){
                             pista = 2;
                         }
                         else{pista = 1;}
+                        sem_post(sem_broadcast);
                         cabecaA->prox = cabecaA->prox->prox->prox;
                         int count = 0;
-                        while((cabecaA->prox != NULL) && (arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init <= current_time)){
+                        int temp_time = current_time;
+                        while((cabecaA->prox != NULL) && (arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init <= temp_time)){
                             count++;
+                            printf("ID: %d count %d\n",arrayshm[cabecaA->prox->slot_shm].id, count );
                             if(count>3){
-                                
                                 reinsere(cabecaA);
                             }
                             cabecaA = cabecaA->prox;
@@ -510,16 +511,12 @@ void *gere_arrivals(void *cabeca){
                 }
             }
         }
-        /*
-        if((cabecaA->prox!=NULL)&&(arrayshm[cabecaA->prox->slot_shm].eta +arrayshm[cabecaA->prox->slot_shm].init <current_time)){
-            usleep(ut*1000);
-        }
-        */
+        
         int value, value1;
         sem_getvalue(sem_pistaa1, &value);
         sem_getvalue(sem_pistaa2, &value1);
-        if(((cabecaA->prox == NULL)||(current_time-time_departure >= configs->dAterra))&&((value==1) && value1==1)){
-              
+        //if(((cabecaA->prox == NULL)||(current_time-time_departure >= configs->dAterra))&&((value==1) && value1==1)){
+        if(((cabecaA->prox == NULL)||(time_departure - current_time >= configs->dAterra))&&((value==1) && value1==1)){
             sem_post(sem_arrival_empty);
         }
         else{
@@ -557,6 +554,7 @@ void *gere_departures(void *cabeca){
                         }
                         else{pista =3;}
                         sem_post(sem_array);
+                        sem_post(sem_broadcast);
                         cabecaD->prox = cabecaD->prox->prox;
                         
                         break;
@@ -572,6 +570,7 @@ void *gere_departures(void *cabeca){
                         arrayshm[cabecaD->prox->prox->slot_shm].command = 4;
                         arrayshm[cabecaD->prox->prox->slot_shm].pista = pista;
                         sem_post(sem_array);
+                        sem_post(sem_broadcast);
                         cabecaD->prox = cabecaD->prox->prox->prox;
                         
                         break;
@@ -756,12 +755,11 @@ void *partida(void *node){
     sem_wait(sem_array);
     int ordem = arrayshm[shm_slot].command;
     sem_post(sem_array);
-    while(ordem!=4){
-        sem_wait(sem_array);
-        ordem = arrayshm[shm_slot].command;
-        sem_post(sem_array);
-        usleep(ut*1000);
+    pthread_mutex_lock(&mutex_ordem);
+    while(arrayshm[shm_slot].command!=4){
+        pthread_cond_wait(&cond_ordem, &mutex_ordem);
     }
+    pthread_mutex_unlock(&mutex_ordem);
 
 
     if(arrayshm[shm_slot].pista == 3){
@@ -1012,6 +1010,18 @@ void inicializa_stats(){
 	stats->rejeitados =0;
 }
 
+void *broadcast(){
+
+    while(1){
+        sem_wait(sem_broadcast);
+        pthread_mutex_lock(&mutex_ordem);
+        pthread_cond_broadcast(&cond_ordem);
+        pthread_mutex_unlock(&mutex_ordem);
+    }
+
+
+}
+
 int main()
 {
  
@@ -1051,6 +1061,8 @@ int main()
     sem_pistad2 = sem_open(SEM_D2, O_CREAT | O_EXCL, 0700, 1);
     sem_unlink(SEM_LISTA);
     sem_lista = sem_open(SEM_LISTA, O_CREAT | O_EXCL, 0700, 1);
+    sem_unlink(SEM_BROAD);
+    sem_broadcast = sem_open(SEM_BROAD, O_CREAT | O_EXCL, 0700, 0);
     sigfillset(&sigs);
     sigdelset(&sigs, SIGINT);
     sigdelset(&sigs, SIGUSR1);
@@ -1089,6 +1101,10 @@ int main()
         perror("pthread_create error");
         exit(1);
     }    
+    if(pthread_create(&broadcasts, NULL, broadcast, NULL)!=0){
+        perror("pthread_create error");
+        exit(1);
+    }  
     lerPipe();
     return 0;
 }
