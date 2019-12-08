@@ -297,18 +297,17 @@ void* lerMQ(void* cabeca){
             t_queueA *nodeA = cabecalho->A;
             t_queueA *nodeNovo = (t_queueA*)malloc(sizeof(t_queueA));
             if(arrayshm[i].emergency == 0){
-	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].emergency==1)){
+	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)){
 	                nodeA = nodeA->prox;
 	            }
-	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)){
+	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta==msg.eta)&&(arrayshm[nodeA->prox->slot_shm].emergency==1)){
 	                nodeA = nodeA->prox;
 	            }
 	        }
 	        else{
-	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)&&(arrayshm[nodeA->prox->slot_shm].emergency==1)){
+	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)){
 	                nodeA = nodeA->prox;
 	            }
-
 	        }
             sem_post(sem_array);
             nodeNovo->slot_shm = i;
@@ -389,14 +388,11 @@ int check_arrival(void* cabeca){
     t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
         sem_wait(sem_array);
         if((cabecaA->prox->prox!=NULL) && (arrayshm[cabecaA->prox->prox->slot_shm].eta == arrayshm[cabecaA->prox->slot_shm].eta)){
-            //arrayshm[cabecaA->prox->prox->slot_shm].command = 1;
-            //arrayshm[cabecaA->prox->slot_shm].command = 1;
             
             sem_post(sem_array);
             return 2;
         }
         else{
-            //arrayshm[cabecaA->prox->slot_shm].command = 1;
             
             sem_post(sem_array);
             return 1;
@@ -413,14 +409,10 @@ int check_departure(void* cabeca){
 
         sem_wait(sem_array);
         if((cabecaD->prox->prox!=NULL) && (arrayshm[cabecaD->prox->prox->slot_shm].takeoff <= arrayshm[cabecaD->prox->slot_shm].takeoff)){
-           // arrayshm[cabecaD->prox->prox->slot_shm].command = 1;
-           // arrayshm[cabecaD->prox->slot_shm].command = 1;
-
             sem_post(sem_array);
             return 2;
         }
         else{
-            //arrayshm[cabecaD->prox->slot_shm].command = 1;
             sem_post(sem_array);
             return 1;
         }
@@ -433,7 +425,6 @@ int conta_departure(void *cabeca){
     t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
 
         sem_wait(sem_array);
-        printf("tou aqui mas foda-se\n");
         if((cabecaD->prox->prox!=NULL) && (arrayshm[cabecaD->prox->prox->slot_shm].takeoff <= arrayshm[cabecaD->prox->slot_shm].takeoff)){
             sem_post(sem_array);
             printf("RETURN 2\n" );
@@ -459,22 +450,13 @@ void *gere_arrivals(void *cabeca){
     while(1){
     	
         t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
-       /* t_queueA *tempnode = ((t_cabecasqueue*)cabeca)->A;
-        while(tempnode->prox!=NULL){
-        	printf("ID:%d ETA: %d\n",arrayshm[tempnode->prox->slot_shm].id,arrayshm[tempnode->prox->slot_shm].eta);
-        	tempnode = tempnode->prox;
-        }
-        printf("----------------\n");
-        printf("----------------\n");
-        printf("----------------\n");*/
 
         sem_wait(sem_arrival_full);
 
         if(cabecaA->prox!=NULL){    
             time_departure = arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init;
-            if(arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init /*completar*/ <= current_time){
+            if(arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init <= current_time){
                 ncriados = check_arrival(cabeca);
-                //time_departure = current_time;
                 switch (ncriados){
         
                     case 1:
@@ -515,14 +497,11 @@ void *gere_arrivals(void *cabeca){
                         int temp_time = current_time;
                         while((cabecaA->prox != NULL) &&(arrayshm[cabecaA->prox->slot_shm].eta + arrayshm[cabecaA->prox->slot_shm].init <= temp_time)){
                             count++;
-                            //printf("COUNT: %d\n",count);
                             if(count>3){
-                            //	printf("ID:%d ETA: %d\n",arrayshm[cabecaA->prox->slot_shm].id,arrayshm[cabecaA->prox->slot_shm].eta);
                                 reinsere(cabecaA);
                                 
                             }
                             else{
-                            //printf("ID:%d ETA: %d\n",arrayshm[cabecaA->prox->slot_shm].id,arrayshm[cabecaA->prox->slot_shm].eta);
                             cabecaA = cabecaA->prox;
                         }
                         }
@@ -535,7 +514,6 @@ void *gere_arrivals(void *cabeca){
         int value, value1;
         sem_getvalue(sem_pistaa1, &value);
         sem_getvalue(sem_pistaa2, &value1);
-        //if(((cabecaA->prox == NULL)||(current_time-time_departure >= configs->dAterra))&&((value==1) && value1==1)){
         if(((cabecaA->prox == NULL)||(time_departure - current_time >= configs->dAterra))&&((value==1) && value1==1)){
             sem_post(sem_arrival_empty);
         }
@@ -545,8 +523,7 @@ void *gere_arrivals(void *cabeca){
             
         } 
         
-        usleep(ut*1000);
-        //sem_post(sem_arrival_full);
+        usleep(ut*1000);     
     }   
 }
 
@@ -561,7 +538,7 @@ void *gere_departures(void *cabeca){
         t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
         
         if(cabecaD->prox!=NULL){
-            if(arrayshm[cabecaD->prox->slot_shm].takeoff/*completar*/ <= current_time){
+            if(arrayshm[cabecaD->prox->slot_shm].takeoff <= current_time){
                 ncriados = check_departure(cabeca);
                 switch (ncriados){
                     case 1:
@@ -633,10 +610,6 @@ void torreControlo(){
     	perror("Erro a criar a thread gere_departures\n");
     	exit(1);
     }
-    /*if(pthread_create(&tc_busyManagement, NULL, gere_busy, (void*)heads) != 0){
-        perror("Erro a criar a thread gere_busy\n");
-        exit(1);
-    }*/
 
     while(1){
     	usleep(ut*1000);
@@ -983,8 +956,8 @@ void acabar(){
     escreverEcra("Named Pipe closed successfully\n\n");
     escreverLog("Named Pipe closed successfully\n");
     sem_post(escreve_log);
-    //sem_unlink(SEM_ARR);
-    //sem_close(sem_array);
+    sem_unlink(SEM_ARR);
+    sem_close(sem_array);
     sem_unlink(SEM_ARRIVAL_EMPTY);
     sem_close(sem_arrival_empty);
     sem_unlink(SEM_STATS);
@@ -1013,18 +986,6 @@ void printstats(){
     printf("NUMBER OF ARRIVALS: %d\n", stats->nAterragens);
     printf("AVERAGE LANDING TIME %d\n", stats->tempomedioAterrar);
     printf("NUMBER OF DEPARTURES: %d\n", stats->nDescolagens);
-
-    /*
-    int nVoos;
-    int nAterragens;
-    int tempomedioAterrar;
-    int nDescolagens;
-    int tempomedioDescolar;
-    int nmedioHoldings;
-    int nmedioHoldings_urgentes;
-    int nRedirecionados;
-    int rejeitados;
-    */
 
 }
 
