@@ -3,7 +3,10 @@
 
 
 /*
-prioridad | atualizar escrever log | atualizar escrever stats | escrver stats CRL C | Fazer o Relatório  | corrigir while 1 da TC
+prioridade | atualizar escrever log  Fazer o Relatório  | corrigir while 1 da TC
+condition variable voos chegada
+mudar sistema numeraçao mensagens
+demasiados voos em espera
 
 */
 
@@ -167,7 +170,6 @@ void criarSHM(){
 	shmid2 = shmget(IPC_PRIVATE, sizeof(t_comms)*maxvoos, IPC_CREAT | 0666);
 	sprintf(message, "Shared memory with ID %d created\n", shmid );
     sem_wait(escreve_log);
-
     escreverEcra(message);
     escreverLog(message);
     sem_post(escreve_log);
@@ -176,8 +178,6 @@ void criarSHM(){
 
     arrayshm = stats->ptrArray;  
     	
-	//acrescentar error handling	
-
 }
 
 
@@ -186,7 +186,6 @@ void criarMQ(){
 	if((mqid = msgget(IPC_PRIVATE, IPC_CREAT|0777))<0){
 		printf("Error creating message queue");
 		exit(1);
-
 	}
     sprintf(message, "Message Queue with ID %d created\n", mqid);
     sem_wait(escreve_log);
@@ -269,54 +268,77 @@ void* lerMQ(void* cabeca){
     	
     	sem_post(sem_stats);
         if(msg.tipo == 1){
-        	sem_wait(sem_array);
-            arrayshm[i].tipo = msg.tipo;
-            arrayshm[i].takeoff = msg.takeoff;
-            arrayshm[i].isCompleted = 0; 
-            arrayshm[i].id = msg.id;
-            arrayshm[i].init = msg.init;
-            t_queueD *node = cabecalho->D;
-            t_queueD *nodeNovo = malloc(sizeof(t_queueD));
-            while((node->prox!=NULL)&&(arrayshm[node->prox->slot_shm].takeoff<msg.takeoff)){
-                node = node->prox;
+
+            stats->nDescolagens+=1;
+            if(stats->nDescolagens + 1>configs->maxpart){
+                msg.mtype = msg.id+3;
+
+                msg.rejeitar = 1;
+                stats->nDescolagens-=1;
+
             }
-            sem_post(sem_array);
-            nodeNovo->slot_shm = i;
-            nodeNovo->prox = node->prox;
-            node->prox = nodeNovo;
+            else{
+            	sem_wait(sem_array);
+                arrayshm[i].tipo = msg.tipo;
+                arrayshm[i].takeoff = msg.takeoff;
+                arrayshm[i].isCompleted = 0; 
+                arrayshm[i].id = msg.id;
+                arrayshm[i].init = msg.init;
+                t_queueD *node = cabecalho->D;
+                t_queueD *nodeNovo = malloc(sizeof(t_queueD));
+                while((node->prox!=NULL)&&(arrayshm[node->prox->slot_shm].takeoff<msg.takeoff)){
+                    node = node->prox;
+                }
+                sem_post(sem_array);
+                nodeNovo->slot_shm = i;
+                nodeNovo->prox = node->prox;
+                node->prox = nodeNovo;
+                msg.mtype = msg.id + 3;
+                msg.slot_shm=i++;
+            }
         }
         if(msg.tipo == 2){
-        	sem_wait(sem_array);
-            arrayshm[i].init = msg.init;
-            arrayshm[i].id = msg.id;
-            arrayshm[i].eta = msg.eta;
-            arrayshm[i].fuel = msg.fuel;
-            arrayshm[i].tipo = msg.tipo;
-            arrayshm[i].isCompleted=0;
-            arrayshm[i].emergency = msg.emergency;
-            t_queueA *nodeA = cabecalho->A;
-            t_queueA *nodeNovo = (t_queueA*)malloc(sizeof(t_queueA));
-            if(arrayshm[i].emergency == 0){
-	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].emergency==1)){
-	                nodeA = nodeA->prox;
-	            }
-	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)){
-	                nodeA = nodeA->prox;
-	            }
-	        }
-	        else{
-	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)&&(arrayshm[nodeA->prox->slot_shm].emergency==1)){
-	                nodeA = nodeA->prox;
-	            }
+            stats->nAterragens +=1;
+            if(stats->nAterragens>configs->maxchega){
+                msg.mtype = msg.id+3;
+                msg.rejeitar = 1;
+                stats->nAterragens-=1;
 
-	        }
-            sem_post(sem_array);
-            nodeNovo->slot_shm = i;
-            nodeNovo->prox = nodeA->prox;
-            nodeA->prox = nodeNovo;
+            }
+            else{
+            	sem_wait(sem_array);
+                arrayshm[i].init = msg.init;
+                arrayshm[i].id = msg.id;
+                arrayshm[i].eta = msg.eta;
+                arrayshm[i].fuel = msg.fuel;
+                arrayshm[i].tipo = msg.tipo;
+                arrayshm[i].isCompleted=0;
+                arrayshm[i].emergency = msg.emergency;
+                t_queueA *nodeA = cabecalho->A;
+                t_queueA *nodeNovo = (t_queueA*)malloc(sizeof(t_queueA));
+                if(arrayshm[i].emergency == 0){
+    	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].emergency==1)){
+    	                nodeA = nodeA->prox;
+    	            }
+    	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)){
+    	                nodeA = nodeA->prox;
+    	            }
+    	        }
+    	        else{
+    	            while((nodeA->prox!=NULL)&&(arrayshm[nodeA->prox->slot_shm].eta<msg.eta)&&(arrayshm[nodeA->prox->slot_shm].emergency==1)){
+    	                nodeA = nodeA->prox;
+    	            }
+
+    	        }
+                sem_post(sem_array);
+                nodeNovo->slot_shm = i;
+                nodeNovo->prox = nodeA->prox;
+                nodeA->prox = nodeNovo;
+                msg.mtype = msg.id + 3;
+                msg.slot_shm=i++;
+            }
         }
-    	msg.mtype = msg.id + 3;
-    	msg.slot_shm=i++;
+    	
     	msgsnd(mqid, &msg, sizeof(t_message), 0);
         
     }  
@@ -429,25 +451,6 @@ int check_departure(void* cabeca){
     
 }
 
-int conta_departure(void *cabeca){
-    t_queueD *cabecaD = ((t_cabecasqueue*)cabeca)->D;
-
-        sem_wait(sem_array);
-        printf("tou aqui mas foda-se\n");
-        if((cabecaD->prox->prox!=NULL) && (arrayshm[cabecaD->prox->prox->slot_shm].takeoff <= arrayshm[cabecaD->prox->slot_shm].takeoff)){
-            sem_post(sem_array);
-            printf("RETURN 2\n" );
-            return 2;
-        }
-        else{
-    
-            sem_post(sem_array);
-            printf("RETURN 1\n");
-            return 1;
-        }
-    printf("RETURN 0\n");
-    return 0;
-}
 
 
 
@@ -763,6 +766,10 @@ void *partida(void *node){
     	perror("departure:msgrcv");
     	exit(1);
     }
+    if(msg.rejeitar == 1){
+        printf("FLIGHT TP%s REJECTED BY CONTROL TOWER, EXITING SYSTEM\n", ((t_vooD*)node)->nome);
+        pthread_exit(0);  
+    }
 
     shm_slot = msg.slot_shm;
     strcpy(str,"");
@@ -793,12 +800,11 @@ void *partida(void *node){
 
         sprintf(str, "FLIGHT TP%d IS DEPARTING FROM TRACK 0L \n", id);
         stats->tempomedioDescolar += (current_time-arrayshm[shm_slot].takeoff);
-        stats->nDescolagens+=1;
         sem_wait(escreve_log);
         escreverEcra(str);
         escreverLog(str);
         sem_post(escreve_log);
-        usleep(configs->dDescola * 1000);
+        usleep(configs->dDescola * ut*1000);
         sem_post(sem_pistad1);
     }
 
@@ -808,12 +814,11 @@ void *partida(void *node){
         strcpy(str,"");
         sprintf(str, "FLIGHT TP%d IS DEPARTING FROM TRACK 0R \n", id);
         stats->tempomedioDescolar += (current_time-arrayshm[shm_slot].takeoff);
-        stats->nDescolagens+=1;
         sem_wait(escreve_log);
         escreverEcra(str);
         escreverLog(str);
         sem_post(escreve_log);
-        usleep(configs->dDescola * 1000);
+        usleep(configs->dDescola * ut* 1000);
         sem_post(sem_pistad2);
     }
     sem_post(sem_arrival_empty);
@@ -840,6 +845,7 @@ void *chegada(void *node){
     msg.tipo = 2;
     if(msg.fuel <= msg.eta + 4 + configs->dAterra){
        	msg.emergency = 1;
+        stats->nUrgentes+=1;
        	msg.mtype = (long)1;
     }
     else{
@@ -849,7 +855,12 @@ void *chegada(void *node){
     msgsnd(mqid, &msg, sizeof(t_message), 0);
 
     msgrcv(mqid, &msg, sizeof(t_message), id+3, 0);
+    if(msg.rejeitar == 1){
+        printf("FLIGHT TP%s REJECTED BY CONTROL TOWER, EXITING SYSTEM\n", ((t_vooA*)node)->nome);
+        pthread_exit(0);  
+    }
     shm_slot = msg.slot_shm;
+
 
     strcpy(str,"");
     sprintf(str, "SHARED MEMORY SLOT ATTRIBUTED TO FLIGHT TP%d IS: %d\n", id, shm_slot);
@@ -903,7 +914,7 @@ void *chegada(void *node){
             usleep(ut*(configs->dAterra)*1000);
             strcpy(str,"");
             sprintf(str, "FLIGHT TP%d HAS FINISHED LANDING, FREEING UP TRACK 28L\n", id);
-            stats->nAterragens +=1;
+            
             stats->tempomedioAterrar += (current_time-start_time);
             sem_wait(escreve_log);
             escreverEcra(str);
@@ -933,7 +944,7 @@ void *chegada(void *node){
             strcpy(str,"");
             sprintf(str, "FLIGHT TP%d HAS FINISHED LANDING, FREEING UP TRACK 28R\n", id);
             stats->tempomedioAterrar += (current_time-start_time);
-            stats->nAterragens +=1;
+            
 
             sem_wait(escreve_log);
             escreverEcra(str);
@@ -945,6 +956,7 @@ void *chegada(void *node){
     if(ordem == 3){
         strcpy(str,"");
             sprintf(str, "FLIGHT TP%d DIVERTED TO CLOSEST AIRPORT\n", id);
+            stats->nAterragens-=1;
             sem_wait(escreve_log);
             escreverEcra(str);
             escreverLog(str);
@@ -978,9 +990,43 @@ void *criavoos(){
 
 }
 
+void printstats(){
+    printf("-------------------------------------\n");
+    double x;
+    sem_wait(sem_stats);
+    printf("\t STATS\n");
+    printf("NUMBER OF FLIGHTS: %d\n", stats->nVoos);
+    printf("NUMBER OF ARRIVALS: %d\n", stats->nAterragens);
+    if(stats->nAterragens >0){
+    x = ((double)stats->tempomedioAterrar/(double)stats->nAterragens);}
+    else{x=0;}
+    printf("AVERAGE LANDING TIME: %.2f\n", x);
+    printf("NUMBER OF DEPARTURES: %d\n", stats->nDescolagens);
+    if(stats->nDescolagens>0){
+    x = ((double)stats->tempomedioDescolar/(double)stats->nDescolagens);}
+    else{x=0;}
+    printf("AVERAGE DEPARTURE TIME: %.2f\n", x);
+    if(stats->nAterragens >0){
+    x=((double)stats->nmedioHoldings/(double)stats->nAterragens);
+    }
+    else{x=0;}
+    printf("AVERAGE HOLDING NUMBER: %.2f\n", x);
+    if(stats->nUrgentes>0){
+        x= ((double)stats->nmedioHoldings_urgentes/(double)stats->nUrgentes);
+    }
+    else{x=0;}
+    printf("AVERAGE URGENT HOLDING NUMBER: %.2f\n", x);
+    printf("NUMBER OF REDIRECTED FLIGHTS: %d\n", stats->nRedirecionados);
+    printf("NUMBER OF REJECTED FLIGHTS: %d\n", stats->rejeitados);
+    printf("NUMBER OF URGENT FLIGHTS %d\n", stats->nUrgentes);
+    sem_post(sem_stats);
+    printf("-------------------------------------\n");
+    
+}
+
 
 void acabar(){
-	
+	printstats();
     msgctl(mqid,IPC_RMID,NULL);
     sem_wait(escreve_log);
     escreverEcra("Message Queue terminated successfully\n\n");
@@ -1021,32 +1067,7 @@ void acabar(){
     exit(0);
 }
 
-void printstats(){
-    printf("------------------------------\n");
-    printf("\t STATS\n");
-    printf("NUMBER OF FLIGHTS: %d\n", stats->nVoos);
-    printf("NUMBER OF ARRIVALS: %d\n", stats->nAterragens);
-    printf("AVERAGE LANDING TIME %d\n", (stats->tempomedioAterrar)/nAterragens);
-    printf("NUMBER OF DEPARTURES: %d\n", stats->nDescolagens);
-    printf("AVERAGE DEPARTURE TIME: %d\n", (stats->tempomedioDescolar/nDescolagens));
-    printf("AVERAGE HOLDING NUMBER: %d\n", (stats->nmedioHoldings)/nAterragens);
-    printf("AVERAGE URGENT HOLDING NUMBER:\n", (stats->nmedioHoldings_urgentes)/nUrgentes);
-    printf("NUMBER OF REDIRECTED FLIGHTS: \n", stats->nRedirecionados);
-    printf("NUMBER OF REJECTED FLIGHTS\n", stats->rejeitados);
-    printf("NUMBER OF URGENT FLIGHTS\n", stats->nUrgentes);
-    /*
-    int nVoos;
-    int nAterragens;
-    int tempomedioAterrar;
-    int nDescolagens;
-    int tempomedioDescolar;
-    int nmedioHoldings;
-    int nmedioHoldings_urgentes;
-    int nRedirecionados;
-    int rejeitados;
-    */
 
-}
 
 
 void acabarTC(){
@@ -1069,10 +1090,10 @@ void inicializa_stats(){
 	stats->nmedioHoldings_urgentes = 0;
 	stats->nRedirecionados =0;
 	stats->rejeitados =0;
+    stats->nUrgentes = 0;
 }
 
 void *broadcast(){
-
     while(1){
         sem_wait(sem_broadcast);
         pthread_mutex_lock(&mutex_ordem);
@@ -1080,8 +1101,9 @@ void *broadcast(){
         pthread_mutex_unlock(&mutex_ordem);
     }
 
-
 }
+
+
 
 int main()
 {
@@ -1139,6 +1161,13 @@ int main()
     escreverEcra("Execution start\n");
     escreverLog("Execution start\n");
     sem_post(escreve_log);
+    char mensagem[50];
+    strcpy(mensagem, "");
+    sprintf(mensagem, "MAIN PROCESS ID [%d]\n", getpid());
+    sem_wait(escreve_log);
+    escreverEcra(mensagem);
+    escreverLog(mensagem);
+    sem_post(escreve_log);
     criarSHM();
     inicializa_stats();
     criarMQ();
@@ -1146,6 +1175,13 @@ int main()
     
     
     if(fork()==0){
+        signal(SIGUSR1,printstats);
+        strcpy(mensagem, "");
+        sprintf(mensagem, "CONTROL TOWER PROCESS ID [%d]\n", getpid());
+        sem_wait(escreve_log);
+        escreverEcra(mensagem);
+        escreverLog(mensagem);
+        sem_post(escreve_log);
     	if(pthread_create(&thread_tempoTC, NULL, tempo, NULL)!=0){
         	perror("pthread_create error");
        		exit(1);
@@ -1155,7 +1191,9 @@ int main()
         torreControlo();
         exit(0);
     }
+    signal(SIGUSR1, SIG_IGN);
     signal(SIGINT, acabar);
+    
 
     //criar struct com a cabeca das listas para mandar para a criavoos
     if(pthread_create(&thread_check, NULL, criavoos, NULL)!=0){

@@ -97,6 +97,7 @@ typedef struct message{
     int tipo; //departure 1, arrival 2
     int slot_shm;
     int emergency; //emergency 1, not emergency 0
+    int rejeitar;
 }t_message;
 
 typedef struct comms{
