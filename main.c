@@ -3,7 +3,7 @@
 
 
 /*
-prioridade | atualizar escrever log  Fazer o Relatório  | corrigir while 1 da TC
+prioridade | atualizar escrever log | Fazer o Relatório  | corrigir while 1 da TC
 condition variable voos chegada
 mudar sistema numeraçao mensagens
 demasiados voos em espera
@@ -1065,20 +1065,7 @@ void acabar(){
     exit(0);
 }
 
-void printstats(){
-    printf("------------------------------\n");
-    printf("\t STATS\n");
-    printf("NUMBER OF FLIGHTS: %d\n", stats->nVoos);
-    printf("NUMBER OF ARRIVALS: %d\n", stats->nAterragens);
-    printf("AVERAGE LANDING TIME %d\n", (stats->tempomedioAterrar)/nAterragens);
-    printf("NUMBER OF DEPARTURES: %d\n", stats->nDescolagens);
-    printf("AVERAGE DEPARTURE TIME: %d\n", (stats->tempomedioDescolar/nDescolagens));
-    printf("AVERAGE HOLDING NUMBER: %d\n", (stats->nmedioHoldings)/nAterragens);
-    printf("AVERAGE URGENT HOLDING NUMBER:\n", (stats->nmedioHoldings_urgentes)/nUrgentes);
-    printf("NUMBER OF REDIRECTED FLIGHTS: \n", stats->nRedirecionados);
-    printf("NUMBER OF REJECTED FLIGHTS\n", stats->rejeitados);
-    printf("NUMBER OF URGENT FLIGHTS\n", stats->nUrgentes);
-}
+
 
 
 void acabarTC(){
