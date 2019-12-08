@@ -3,7 +3,7 @@
 
 
 /*
-atualizar escrever log | atualizar escrever stats | escrver stats CRL C | Fazer o Relatório 
+atualizar escrever log | atualizar escrever stats | escrver stats CRL C | Fazer o Relatório  | corrigir while 1 da TC
 
 */
 
@@ -381,10 +381,6 @@ void reinsere(t_queueA *node){
 int check_arrival(void* cabeca){
 	
     t_queueA *cabecaA = ((t_cabecasqueue*)cabeca)->A;
-
-
-    
-    
         sem_wait(sem_array);
         if((cabecaA->prox->prox!=NULL) && (arrayshm[cabecaA->prox->prox->slot_shm].eta == arrayshm[cabecaA->prox->slot_shm].eta)){
             arrayshm[cabecaA->prox->prox->slot_shm].command = 1;
