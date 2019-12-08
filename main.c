@@ -473,7 +473,6 @@ int conta_departure(void *cabeca){
 void *gere_arrivals(void *cabeca){
     int ncriados;
     int pista = 1;
-    isBusy = 0;
     time_departure = current_time;
     while(1){
     	
@@ -670,7 +669,7 @@ void lerPipe(){
 
     	read(fdpipe,aux,1);
         while((strcmp(aux, "\n")!=0)){
-            strcpy(comando+k, aux);
+            strcpy(comando+k, aux);	
             k++;
             memset(aux, 0, sizeof(aux));
             read(fdpipe, aux, 1);
@@ -779,9 +778,6 @@ void *partida(void *node){
 
     usleep((((t_vooD*)node)->takeoff - current_time-1)*ut*1000);
 
-    sem_wait(sem_array);
-    int ordem = arrayshm[shm_slot].command;
-    sem_post(sem_array);
     pthread_mutex_lock(&mutex_ordem);
     while(arrayshm[shm_slot].command!=4){
         pthread_cond_wait(&cond_ordem, &mutex_ordem);
@@ -842,6 +838,13 @@ void *chegada(void *node){
     msg.id = id;
     msg.tipo = 2;
     if(msg.fuel <= msg.eta + 4 + configs->dAterra){
+    	strcpy(str, "");
+        sprintf(str, "FLIGHT TP%d EMERGENCY LANDING REQUESTED \n", msg.id);
+        sem_wait(escreve_log);
+        escreverEcra(str);
+        escreverLog(str);
+        sem_post(escreve_log);
+
        	msg.emergency = 1;
         stats->nUrgentes+=1;
        	msg.mtype = (long)1;
@@ -876,7 +879,7 @@ void *chegada(void *node){
         if(ordem == 2){
 
             strcpy(str,"");
-            sprintf(str, "FLIGHT TP%d RECEIVED COMMAND TO HOLD FOR %d TIME UNITS\n", id, arrayshm[shm_slot].hold_time);
+            sprintf(str, "FLIGHT TP%d RECEIVED COMMAND TO HOLD FOR %d TIME UNITS. FUEL => %d\n", id, arrayshm[shm_slot].hold_time,arrayshm[shm_slot].fuel);
             sem_wait(escreve_log);
             escreverEcra(str);
             escreverLog(str);
@@ -1048,8 +1051,20 @@ void acabar(){
     sem_close(sem_arrival_empty);
     sem_unlink(SEM_STATS);
     sem_close(sem_stats);
+    sem_unlink(SEM_A1);
+    sem_close(sem_pistaa1);
+    sem_unlink(SEM_A2);
+    sem_close(sem_pistaa2);
+    sem_unlink(SEM_D1);
+    sem_close(sem_pistad1);
+    sem_unlink(SEM_D2);
+    sem_close(sem_pistad2);
     sem_unlink(SEM_ARRIVAL_FULL);
     sem_close(sem_arrival_full);
+    sem_unlink(SEM_LISTA);
+    sem_close(sem_lista);
+    sem_unlink(SEM_BROAD);
+    sem_close(sem_broadcast);
     sem_wait(escreve_log);
     escreverEcra("Sempahores closed successfully\n\n");
     escreverLog("Semaphores closed successfully\n");

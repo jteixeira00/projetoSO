@@ -154,7 +154,6 @@ sem_t *sem_lista;
 sem_t *sem_broadcast;
 sigset_t sigs;
 
-pthread_mutex_t readpipe = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_mutex_t mutex_ordem = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t cond_ordem = PTHREAD_COND_INITIALIZER;
@@ -166,7 +165,6 @@ pthread_t tc_msq;
 pthread_t tc_managefuel;
 pthread_t tc_gere_arrivals;
 pthread_t tc_gere_departures;
-pthread_t tc_busyManagement;
 pthread_t voosChegada[1000], voosPartida[1000];
 pthread_t broadcasts;
 
@@ -179,7 +177,7 @@ int shmid;
 int mqid;
 int fdpipe;
 char comando[SIZE];
-int isBusy;
+
 
 
 #endif // HEADER_H_INCLUDED
